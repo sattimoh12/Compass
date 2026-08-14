@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Compass">
+<meta name="theme-color" content="#0c0c0e">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230c0c0e'/%3E%3Ccircle cx='90' cy='90' r='54' fill='none' stroke='%23c9a44c' stroke-width='4'/%3E%3Cpath d='M90 42 L102 90 L90 138 L78 90 Z' fill='%23c9a44c'/%3E%3C/svg%3E">
+<title>Compass</title>
+<style>
+:root{
+  --bg:#0c0c0e; --panel:#141417; --panel2:#1b1b20; --line:#2a2a31;
+  --ink:#ece7de; --dim:#8b8779; --faint:#5c594f;
+  --gold:#c9a44c; --green:#6f9c6a; --red:#a8564e;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+button{background:none;border:none;padding:0;cursor:pointer}
+.wrap{max-width:560px;margin:0 auto;padding:0 18px}
+.view{display:none;padding-top:calc(18px + env(safe-area-inset-top))}
+.view.on{display:block}
+
+/* header */
+.hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.hd h1{font-family:var(--serif);font-size:25px;font-weight:400;margin:0;letter-spacing:.3px}
+.hd .sub{font-size:11px;color:var(--faint);letter-spacing:1.6px;text-transform:uppercase}
+.datebar{font-size:12px;color:var(--dim);letter-spacing:.4px;margin-bottom:20px}
+
+/* chain */
+.chain{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.chain .n{font-family:var(--serif);font-size:40px;line-height:1;color:var(--gold)}
+.chain .lbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)}
+.chain .note{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.4}
+.dots{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dot.y{background:var(--gold)}
+.dot.n{background:#3a2422}
+
+/* section label */
+.sec{font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:var(--faint);
+  margin:26px 0 10px;display:flex;justify-content:space-between;align-items:center}
+
+/* floor rows */
+.floor{display:flex;flex-direction:column;gap:9px}
+.f{display:flex;align-items:flex-start;gap:14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:13px;padding:15px 16px;text-align:left;width:100%;transition:border-color .15s,background .15s}
+.f .box{flex:0 0 24px;height:24px;border-radius:7px;border:1.5px solid var(--faint);margin-top:1px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s}
+.f .box svg{width:14px;height:14px;opacity:0;transition:opacity .15s}
+.f.done{background:rgba(111,156,106,.07);border-color:rgba(111,156,106,.35)}
+.f.done .box{background:var(--green);border-color:var(--green)}
+.f.done .box svg{opacity:1}
+.f .t{font-size:15.5px;line-height:1.3}
+.f .d{font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.45}
+.f.done .t{color:var(--dim)}
+
+/* expectation */
+.exp{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
+.exp textarea{width:100%;background:none;border:none;resize:none;font-size:15px;line-height:1.5;
+  outline:none;min-height:56px;padding:0}
+.exp textarea::placeholder{color:var(--faint)}
+.exp .set{font-size:15px;line-height:1.5;font-family:var(--serif);color:var(--ink)}
+.exp .meta{font-size:11px;color:var(--faint);margin-top:9px;letter-spacing:.4px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 15px;
+  font-size:13px;color:var(--ink);letter-spacing:.3px}
+.btn.gold{background:rgba(201,164,76,.12);border-color:rgba(201,164,76,.4);color:var(--gold)}
+.btn:active{opacity:.6}
+.row{display:flex;gap:9px;margin-top:11px;flex-wrap:wrap}
+
+/* log */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 16px;margin-bottom:10px}
+.card h3{margin:0 0 3px;font-size:14.5px;font-weight:500}
+.card .h{font-size:12px;color:var(--dim);line-height:1.45;margin-bottom:12px}
+.step{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0}
+.step .nm{font-size:14px}
+.step .nm small{display:block;color:var(--faint);font-size:11.5px;margin-top:2px}
+.stepper{display:flex;align-items:center;gap:0;background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:0 0 auto}
+.stepper button{width:38px;height:36px;font-size:19px;color:var(--dim);display:flex;align-items:center;justify-content:center}
+.stepper button:active{background:var(--line)}
+.stepper .v{min-width:46px;text-align:center;font-family:var(--serif);font-size:17px;color:var(--gold)}
+.tog{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.tg{border:1px solid var(--line);background:var(--panel2);border-radius:20px;padding:9px 14px;font-size:13px;color:var(--dim)}
+.tg.on{background:rgba(201,164,76,.13);border-color:rgba(201,164,76,.45);color:var(--gold)}
+.inp{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+  padding:11px 13px;font-size:14px;outline:none;margin-top:6px}
+.inp:focus{border-color:var(--gold)}
+textarea.inp{resize:vertical;min-height:88px;line-height:1.55}
+
+/* horizon */
+.hz{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:10px}
+.hz .k{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.hz .b{font-family:var(--serif);font-size:15.5px;line-height:1.6;white-space:pre-wrap;color:var(--ink)}
+.hz .b.d{font-family:var(--sans);font-size:13.5px;color:var(--dim);line-height:1.65}
+.ro{font-size:11px;color:var(--faint);text-align:center;margin:18px 0 8px;line-height:1.6}
+
+/* lock */
+.lock{text-align:center;padding:56px 22px}
+.lock .ic{width:54px;height:54px;margin:0 auto 20px;border-radius:50%;border:1.5px solid var(--line);
+  display:flex;align-items:center;justify-content:center}
+.lock h2{font-family:var(--serif);font-size:21px;font-weight:400;margin:0 0 10px}
+.lock p{font-size:13.5px;color:var(--dim);line-height:1.65;margin:0 auto;max-width:330px}
+.lock .cd{font-family:var(--serif);font-size:33px;color:var(--gold);margin:22px 0 4px}
+.lock .cdl{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--faint)}
+
+/* review tabs */
+.tabs{display:flex;gap:7px;margin-bottom:16px}
+.tab{flex:1;padding:10px 4px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
+  font-size:12px;color:var(--dim);letter-spacing:.5px;text-align:center}
+.tab.on{background:rgba(201,164,76,.12);border-color:rgba(201,164,76,.4);color:var(--gold)}
+.tab.lk{opacity:.4}
+
+/* stats */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.st{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.st .v{font-family:var(--serif);font-size:26px;color:var(--gold);line-height:1.1}
+.st .l{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.35}
+.flag{background:rgba(168,86,78,.1);border:1px solid rgba(168,86,78,.35);border-radius:11px;
+  padding:13px 15px;font-size:13px;color:#d3958d;line-height:1.55;margin-bottom:12px}
+
+/* captures */
+.cap{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px}
+.cap .tx{font-size:14px;line-height:1.5}
+.cap .mt{font-size:11px;color:var(--faint);margin-top:6px}
+
+/* ground */
+.gsum{display:flex;gap:8px;margin-bottom:12px}
+.gs{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 12px;text-align:center}
+.gs .v{font-family:var(--serif);font-size:22px;line-height:1.1}
+.gs .l{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--faint);margin-top:5px}
+.gs.ripe .v{color:var(--gold)}
+.gs.rip .v{color:#9a8f70}
+.gs.fresh .v{color:var(--faint)}
+.startone{width:100%;background:rgba(201,164,76,.13);border:1px solid rgba(201,164,76,.45);
+  border-radius:13px;padding:16px;color:var(--gold);font-size:15px;letter-spacing:.3px;margin-bottom:6px}
+.startone:active{opacity:.6}
+.zone{font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:var(--faint);margin:22px 0 9px}
+.g{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:13px 15px;width:100%;text-align:left;margin-bottom:8px}
+.g .pip{flex:0 0 8px;height:8px;border-radius:50%;background:var(--faint)}
+.g .pip.ripe{background:var(--gold);box-shadow:0 0 0 4px rgba(201,164,76,.14)}
+.g .pip.rip{background:#8a7c56}
+.g .nm{flex:1;min-width:0}
+.g .nm b{font-weight:500;font-size:15px;display:block}
+.g .nm small{color:var(--dim);font-size:12px;display:block;margin-top:3px;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g .ago{font-size:11.5px;color:var(--faint);flex:0 0 auto;text-align:right;line-height:1.35}
+.g .ago b{display:block;color:var(--dim);font-weight:400}
+.one{text-align:center;padding:14px 4px 4px}
+.one .k{font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.one .act{font-family:var(--serif);font-size:23px;line-height:1.45;margin-bottom:10px}
+.one .whn{font-size:13px;color:var(--dim);line-height:1.55}
+.one .ttl{font-size:12px;color:var(--faint);margin-top:16px}
+.sz{flex:0 0 auto;font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--faint);
+  border:1px solid var(--line);border-radius:5px;padding:3px 6px}
+.sz.s{color:var(--green);border-color:rgba(111,156,106,.4)}
+.stuckdone{opacity:.35}
+.stuckdone .nm b{text-decoration:line-through}
+.clock{text-align:center;padding:6px 0 2px}
+.clock .t{font-family:var(--serif);font-size:62px;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.clock .a{font-family:var(--serif);font-size:19px;line-height:1.45;margin:18px 0 4px}
+.clock .s{font-size:12px;color:var(--faint);letter-spacing:1.4px;text-transform:uppercase}
+
+/* fab */
+.fab{position:fixed;right:18px;bottom:calc(90px + env(safe-area-inset-bottom));width:52px;height:52px;
+  border-radius:50%;background:var(--gold);color:#171308;display:flex;align-items:center;justify-content:center;
+  font-size:26px;box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:40}
+
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(12,12,14,.94);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
+nav button{flex:1;padding:11px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--faint)}
+nav button.on{color:var(--gold)}
+nav svg{width:21px;height:21px}
+nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
+
+/* modal */
+.mod{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:flex-end;z-index:100}
+.mod.on{display:flex}
+.sheet{background:var(--panel);width:100%;border-radius:19px 19px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);max-height:88vh;overflow-y:auto}
+.sheet h3{margin:0 0 4px;font-family:var(--serif);font-size:19px;font-weight:400}
+.sheet .hh{font-size:12.5px;color:var(--dim);line-height:1.5;margin-bottom:14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + env(safe-area-inset-bottom));
+  background:var(--panel2);border:1px solid var(--line);border-radius:22px;padding:10px 18px;font-size:13px;
+  z-index:200;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:1}
+.mini{font-size:11.5px;color:var(--faint);line-height:1.6;margin-top:10px}
+</style>
+</head>
+<body>
+
+<!-- ============ TODAY ============ -->
+<div class="view on" id="v-today"><div class="wrap">
+  <div class="hd"><h1>Compass</h1><div class="sub" id="t-day"></div></div>
+  <div class="datebar" id="t-date"></div>
+
+  <div class="chain">
+    <div class="n" id="t-chain">0</div>
+    <div style="flex:1">
+      <div class="lbl">Day chain</div>
+      <div class="note" id="t-chainnote">Consecutive days you wrote. Badly counts.</div>
+      <div class="dots" id="t-dots"></div>
+    </div>
+  </div>
+
+  <div class="sec">Expectation <span id="t-explock"></span></div>
+  <div class="exp" id="t-expbox"></div>
+
+  <div class="sec">The floor <span id="t-floorct"></span></div>
+  <div class="floor" id="t-floor"></div>
+
+  <div class="mini">The floor is the whole verdict on a day. Everything else you do is recorded, not graded &mdash; it shows up on the 1st, not tonight.</div>
+  <div class="row"><button class="btn" onclick="go('arc')">Captures &amp; backup</button></div>
+</div></div>
+
+<!-- ============ LOG ============ -->
+<div class="view" id="v-log"><div class="wrap">
+  <div class="hd"><h1>Log</h1><div class="sub">Ungraded</div></div>
+  <div class="datebar" id="l-date"></div>
+
+  <div class="card">
+    <h3>Creative process</h3>
+    <div class="h">Daily compass #6. Hours, not output. Two disciplines, and the linking hours inside them.</div>
+    <div id="l-hours"></div>
+    <div style="margin-top:12px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint)">Today's hours went to</div>
+      <input class="inp" id="l-project" placeholder="project name" autocomplete="off">
+      <div class="mini" id="l-projhint"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Community building</h3>
+    <div class="h">Daily compass #7. Time, in hours.</div>
+    <div id="l-net"></div>
+  </div>
+
+  <div class="card">
+    <h3>Ambient</h3>
+    <div class="h">Compasses #2, #4, #5, #9, #10, #11. One tap if it happened. No streak, no penalty.</div>
+    <div class="tog" id="l-amb"></div>
+  </div>
+
+  <div class="mini">Nothing on this screen can fail. It exists so the monthly review has something true to read.</div>
+</div></div>
+
+<!-- ============ GROUND ============ -->
+<div class="view" id="v-gr"><div class="wrap">
+  <div class="hd"><h1>Ground</h1><div class="sub">Nothing is late</div></div>
+  <div class="datebar">Compass #9. Everything that eats attention by being unwritten.</div>
+  <div class="tabs" id="g-tabs"></div>
+  <div id="g-start"></div>
+  <div id="g-body"></div>
+  <div class="row" style="margin-top:18px">
+    <button class="btn" onclick="editGround()">Add standing item</button>
+    <button class="btn" onclick="editStuck()">Add to Stuck</button>
+  </div>
+  <div class="mini" id="g-foot"></div>
+</div></div>
+
+<!-- ============ SOURCES ============ -->
+<div class="view" id="v-src"><div class="wrap">
+  <div class="hd"><h1>Sources</h1><div class="sub" id="s-count"></div></div>
+  <div class="datebar">Compasses #4, #5, #10 &mdash; news, magazines, art through the day.</div>
+  <input class="inp" id="s-q" placeholder="filter" autocomplete="off" style="margin:0 0 12px">
+  <div id="s-rand"></div>
+  <div id="s-list"></div>
+  <div class="row" style="margin-top:18px"><button class="btn" onclick="editSource()">Add a source</button></div>
+  <div class="mini">Days since you last opened each one. Not a score &mdash; it is there so the same three don't absorb every visit.</div>
+</div></div>
+
+<!-- ============ HORIZON ============ -->
+<div class="view" id="v-hz"><div class="wrap">
+  <div class="hd"><h1>Horizon</h1><div class="sub">Read only</div></div>
+  <div class="datebar">Daily compass #12 &mdash; satisfied by not holding it in your head.</div>
+  <div id="hz-body"></div>
+  <div class="ro">Editable only inside the monthly and yearly reviews.<br>If you want to change it now, that urge is the thing this screen exists to absorb.</div>
+</div></div>
+
+<!-- ============ REVIEW ============ -->
+<div class="view" id="v-rev"><div class="wrap">
+  <div class="hd"><h1>Review</h1><div class="sub" id="r-state"></div></div>
+  <div class="datebar" id="r-date"></div>
+  <div class="tabs" id="r-tabs"></div>
+  <div id="r-body"></div>
+</div></div>
+
+<!-- ============ ARCHIVE ============ -->
+<div class="view" id="v-arc"><div class="wrap">
+  <div class="hd"><h1>Captures</h1><div class="sub">Blasts</div></div>
+  <div class="datebar">Anything that arrives. Written down, not acted on.</div>
+  <div id="a-list"></div>
+  <div class="sec">Data</div>
+  <div class="card">
+    <div class="h">Everything lives on this device only. Export regularly &mdash; a cleared browser is a cleared history.</div>
+    <div class="row">
+      <button class="btn gold" onclick="doExport()">Export backup</button>
+      <button class="btn" onclick="document.getElementById('imp').click()">Import</button>
+    </div>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)">
+  </div>
+</div></div>
+
+<button class="fab" onclick="openCapture()" aria-label="Capture">+</button>
+
+<nav>
+  <button data-v="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span>Today</span></button>
+  <button data-v="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Log</span></button>
+  <button data-v="gr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19h16"/><path d="M7 19V9M12 19V5M17 19v-6"/></svg><span>Ground</span></button>
+  <button data-v="src"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5.5A2.5 2.5 0 016.5 3H11v18H6.5A2.5 2.5 0 014 18.5z"/><path d="M20 5.5A2.5 2.5 0 0017.5 3H13v18h4.5a2.5 2.5 0 002.5-2.5z"/></svg><span>Sources</span></button>
+  <button data-v="hz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 15h18"/><path d="M7 15c0-3 2-6 5-6s5 3 5 6"/><circle cx="12" cy="5" r="1.6"/></svg><span>Horizon</span></button>
+  <button data-v="rev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Review</span></button>
+</nav>
+
+<div class="mod" id="mod" onclick="if(event.target===this)closeMod()"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   COMPASS — single-file, offline, local-only.
+   Design constraints, deliberate:
+   - The floor is binary and small. Everything else is logged, never graded.
+   - Reviews are hard-locked to their windows. Re-planning is the compulsion,
+     so the UI performs the response prevention.
+   - Compasses are editable only inside a review window.
+   ============================================================ */
+
+const KEY = 'compass.v1';
+const FLOOR = [
+  {id:'write',  t:'Wrote badly',        d:'One session at the file. Not good, not finished — at it. Compass #6, keystone.'},
+  {id:'read',   t:'Read 15 pages',      d:'Compass #3.'},
+  {id:'direct', t:'Directing: one person, one step', d:'Spoke to someone about the work AND moved one concrete thing forward. Both, or it is not done.'},
+  {id:'family', t:'Spoke with family',  d:'Compass #8.'}
+];
+const AMBIENT = [
+  {id:'dress', t:'Dressed well'},
+  {id:'news',  t:'News cycle'},
+  {id:'mag',   t:'Magazines'},
+  {id:'art',   t:'Art / literature'},
+  {id:'errand',t:'Errands window'},
+  {id:'social',t:'Social window'}
+];
+
+/* Ground: standing items. Cadence, not due dates — nothing is ever overdue,
+   so the list stays openable. Each carries a next physical action, because
+   "sort the visa" does not initiate and "find the passport number" does. */
+const ZONES = [
+  {id:'out',   t:'Out of the house'},
+  {id:'home',  t:'At home'},
+  {id:'admin', t:'Desk / phone'}
+];
+const SEED_GROUND = [
+  {name:'Laundry',            zone:'home',  days:7,   next:'Sort the dark pile and start the machine'},
+  {name:'Sheets',             zone:'home',  days:14,  next:'Strip the bed'},
+  {name:'Groceries',          zone:'out',   days:5,   next:'Open notes, write the six things'},
+  {name:'Tidy the desk',      zone:'home',  days:7,   next:'Clear everything off it, put back only what you use'},
+  {name:'Haircut',            zone:'out',   days:35,  next:'Text the barber for a slot'},
+  {name:'Dentist',            zone:'out',   days:180, next:'Call and book'},
+  {name:'Doctor / check-up',  zone:'out',   days:365, next:'Call and book'},
+  {name:'Visa paperwork',     zone:'admin', days:21,  next:'Open the folder and read the next required document'},
+  {name:'Bins out',           zone:'home',  days:7,   next:'Take the bag down'},
+  {name:'Pay / file receipts',zone:'admin', days:30,  next:'Open banking, screenshot anything unfiled'}
+];
+
+/* Sources. Groups in his own order. URLs he supplied are kept verbatim;
+   ones marked mine were filled in and spot-checked. */
+const SGROUPS = [
+  {id:'top',     t:'Top three'},
+  {id:'read',    t:'Reading'},
+  {id:'licence', t:'Need a licence'},
+  {id:'check',   t:'To check'},
+  {id:'buy',     t:'Sales &amp; prints'},
+  {id:'open',    t:'Unresolved'}
+];
+const SEED_SOURCES = [
+  ['Frieze','https://www.frieze.com','top',''],
+  ['Hyperallergic','https://hyperallergic.com','top',''],
+  ['Aperture','https://aperture.org','top','hosts talks with the artists'],
+
+  ['The New Yorker','https://www.newyorker.com','read',''],
+  ['AnOther','https://www.anothermag.com','read',''],
+  ['BOMB','https://bombmagazine.org','read',''],
+  ['Mousse','https://www.moussemagazine.it','read',''],
+  ['Bidoun','https://www.bidoun.org','read',''],
+  ['Elephant','https://elephant.art','read',''],
+  ['Border Crossings','https://bordercrossingsmag.com','read',''],
+  ['Art Papers','https://www.artpapers.org','read',''],
+  ['Dazed — Fukase, From Window','https://www.dazeddigital.com/art-photography/gallery/32827/7/masahisa-fukase-from-window-1973','read','the one you saved'],
+  ['Artbreath interviews','https://artbreath.org/interviews','read',''],
+  ['Murakami, Little Boy','https://gwern.net/doc/anime/eva/little-boy/2005-murakami','read','via gwern'],
+  ['National Gallery of Art','https://www.nga.gov/','read',''],
+  ['SHOWstudio shop','https://shop.showstudio.com/','read',''],
+  ['Soundwalk Collective','https://soundwalkcollective.com/discography','read',''],
+  ['Muzeum Sztuki Łódź','https://msl.org.pl','read',''],
+  ['Metalabel','https://www.metalabel.com/catalog?category=art','read',''],
+  ['IDEA','https://www.instagram.com/idealtd/','read','books at idea.ltd'],
+  ['Printed Matter','https://www.printedmatter.org','read',''],
+  ['e-flux','https://www.e-flux.com','read','prints physical copies'],
+  ['Contemporary Art Daily','https://contemporaryartdaily.com','read',''],
+  ['UbuWeb','https://www.ubuweb.com','read',''],
+  ['Dezeen','https://www.dezeen.com','read',''],
+
+  ['Apollo','https://www.apollo-magazine.com','licence',''],
+  ['Vogue','https://www.vogue.com','licence',''],
+
+  ['Juxtapoz','https://www.juxtapoz.com','check','mine'],
+  ['Hi-Fructose','https://hifructose.com','check','mine'],
+  ['Art in America','https://www.artnews.com/c/art-in-america/','check','mine'],
+  ['ARTnews','https://www.artnews.com','check','mine'],
+  ['Artforum','https://www.artforum.com','check','mine'],
+  ['ArtMaze','https://artmazemag.com','check','now runs through a Linktree'],
+  ['Aesthetica','https://aestheticamagazine.com','check','checked'],
+  ['Nonsite','https://nonsite.org','check','no physical edition'],
+  ['Afterall','https://www.afterall.org','check','checked'],
+  ['Cabinet','https://www.cabinetmagazine.org','check','checked'],
+  ['Art Monthly','https://www.artmonthly.co.uk','check','mine'],
+  ['The Art Section','https://www.theartsection.com','check',''],
+
+  ['Avant Arte','https://avantarte.com/','buy','big names, timed sales'],
+  ['New Art Editions','https://www.newarteditions.com/','buy','what is selling where'],
+  ['Magnum','https://www.magnumphotos.com/','buy','frequent limited-time sales'],
+  ['Feuteu','https://www.feuteu.com/','buy','slick resale — best to buy at issue'],
+  ['Eyestorm','https://www.eyestorm.com','buy','where you started, quiet now'],
+  ['Alec Soth','https://alecsoth.com','buy','inexpensive non-limited prints'],
+
+  ['Neurals','','open','could not identify — what is this?'],
+  ['birdy.','','open','could not identify'],
+  ['mi…','','open','the line was cut off']
+];
+
+const DEFAULT_HZ = {
+  four:  "An audience large enough to be an argument — trusted with a feature partly on the strength of who already turns up.\nA first feature, paid.\nFour years — finished and submitted by 35.",
+  route: "Written over four years: ~20 short scripts, 2 features.\nDirected: ~10 shorts, 1 feature.\nRoughly two written per one shot.\nMonthly shoot day. Feature shoots at 34 — script and proof of concept ahead of it.\nShoot from the backlog. Material was never the bottleneck.",
+  travel:"Three consecutive months somewhere new, every two years.\nA different country every ten years — under consideration, not decided.",
+  home:  "A rooted home where I know the people and the community.\nBerlin, pending the visa situation.",
+  month: "",
+  week:  ""
+};
+
+/* ---------- state ---------- */
+var S = load();   // var, not let: inline handlers and the export path reach it off window
+
+function blankState(){
+  return {v:1, days:{}, weeks:{}, months:{}, years:{}, captures:[],
+          ground: SEED_GROUND.map((g,i) => ({
+            id:'g'+i+'_'+Math.random().toString(36).slice(2,7),
+            name:g.name, zone:g.zone, days:g.days, next:g.next, when:'', last:null, hist:[]
+          })),
+          stuck: [],
+          releases: [],
+          sources: SEED_SOURCES.map((s,i) => ({
+            id:'src'+i, name:s[0], url:s[1], group:s[2], note:s[3], last:null, hits:0
+          })),
+          cfg:{discA:'', discB:'', discC:'', project:'', hz:Object.assign({},DEFAULT_HZ), setup:false},
+          meta:{created:todayKey()}};
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return blankState();
+    const p = JSON.parse(raw);
+    const b = blankState();
+    // shallow-merge so older saves keep working
+    const r = Object.assign(b, p, {cfg:Object.assign(b.cfg, p.cfg||{}, {hz:Object.assign({},DEFAULT_HZ,(p.cfg&&p.cfg.hz)||{})})});
+    if(!Array.isArray(r.ground)) r.ground = blankState().ground;
+    if(!Array.isArray(r.stuck)) r.stuck = [];
+    if(!Array.isArray(r.releases)) r.releases = [];
+    if(!Array.isArray(r.sources) || !r.sources.length) r.sources = blankState().sources;
+    if(!Array.isArray(r.captures)) r.captures = [];
+    return r;
+  }catch(e){ console.warn('load failed', e); return blankState(); }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ toast('Could not save — storage blocked'); }
+}
+
+/* ---------- dates ---------- */
+function pad(n){ return n<10 ? '0'+n : ''+n; }
+function keyOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function todayKey(){ return keyOf(new Date()); }
+function monthKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1); }
+function weekKey(d){
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  t.setDate(t.getDate() - t.getDay());           // week starts Sunday
+  return 'W'+keyOf(t);
+}
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+const MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function longDate(d){ return DAYN[d.getDay()]+', '+d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear(); }
+
+function day(k){
+  k = k || todayKey();
+  if(!S.days[k]) S.days[k] = {exp:'', expAt:null, floor:{}, hrs:{a:0,b:0,c:0,link:0,net:0}, amb:{}, project:''};
+  const d = S.days[k];
+  d.floor = d.floor||{}; d.amb = d.amb||{};
+  d.hrs = Object.assign({a:0,b:0,c:0,link:0,net:0}, d.hrs||{});
+  return d;
+}
+function week(k){ k=k||weekKey(new Date()); if(!S.weeks[k]) S.weeks[k]={love:false,note:'',sched:'',done:false}; return S.weeks[k]; }
+function month(k){ k=k||monthKey(new Date()); if(!S.months[k]) S.months[k]={note:'',project:'',done:false}; return S.months[k]; }
+function year(k){
+  k = k || String(new Date().getFullYear());
+  if(!S.years[k]) S.years[k] = {mastery:'', network:'', maps:'', future:'', audN:null, audNote:'', done:false};
+  const y = S.years[k];
+  if(y.audN === undefined) y.audN = null;
+  if(y.audNote === undefined) y.audNote = '';
+  return y;
+}
+/* most recent recorded audience count, for the Horizon */
+function lastAudience(){
+  const ks = Object.keys(S.years).filter(k => S.years[k] && S.years[k].audN != null).sort();
+  if(!ks.length) return null;
+  const k = ks[ks.length-1];
+  return {n:S.years[k].audN, y:k, prev: ks.length > 1 ? S.years[ks[ks.length-2]].audN : null};
+}
+
+/* ---------- lock windows ---------- */
+function locks(now){
+  now = now || new Date();
+  const dow = now.getDay(), dom = now.getDate(), mo = now.getMonth();
+  return {
+    week:  dow === 0,                                   // Sunday
+    month: dom <= 3,                                    // 1st–3rd
+    year:  (mo === 11 && dom >= 28) || (mo === 0 && dom <= 7)
+  };
+}
+function nextUnlock(kind, now){
+  now = now || new Date();
+  let d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  for(let i=1;i<=400;i++){
+    d = addDays(d,1);
+    if(locks(d)[kind]) return d;
+  }
+  return null;
+}
+function daysUntil(d){
+  const a = new Date(); const t = new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  return Math.round((d - t) / 86400000);
+}
+// Compasses may only be edited while some review window is open.
+function editable(){ const L = locks(); return L.month || L.year; }
+
+/* ---------- chain ---------- */
+function chain(){
+  let n = 0, d = new Date();
+  if(!(S.days[todayKey()] && S.days[todayKey()].floor.write)) d = addDays(d,-1); // today still open
+  for(let i=0;i<3000;i++){
+    const rec = S.days[keyOf(d)];
+    if(rec && rec.floor && rec.floor.write){ n++; d = addDays(d,-1); }
+    else break;
+  }
+  return n;
+}
+function fullDays(mk){
+  let n = 0;
+  for(const k in S.days){
+    if(k.slice(0,7) !== mk) continue;
+    const f = S.days[k].floor || {};
+    if(FLOOR.every(x => f[x.id])) n++;
+  }
+  return n;
+}
+
+/* ---------- ui helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastT;
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),1900); }
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#0d130c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg>';
+
+/* ---------- TODAY ---------- */
+function renderToday(){
+  const now = new Date(), k = todayKey(), d = day(k);
+  $('#t-day').textContent = DAYN[now.getDay()].slice(0,3);
+  $('#t-date').textContent = longDate(now);
+
+  const c = chain();
+  $('#t-chain').textContent = c;
+  $('#t-chainnote').textContent = c === 0
+    ? 'No chain. It starts tonight with one bad sentence.'
+    : (c === 1 ? 'One day. The next one is the same move.' : c + ' days of writing badly, unbroken.');
+
+  // last 14 days
+  let dots = '';
+  for(let i=13;i>=0;i--){
+    const kk = keyOf(addDays(now,-i)), r = S.days[kk];
+    const cls = (r && r.floor && r.floor.write) ? 'y' : (i===0 ? '' : (r ? 'n' : ''));
+    dots += '<div class="dot '+cls+'"></div>';
+  }
+  $('#t-dots').innerHTML = dots;
+
+  // expectation — write once, then locked for the day
+  const eb = $('#t-expbox');
+  if(d.expAt){
+    eb.innerHTML = '<div class="set">'+esc(d.exp)+'</div><div class="meta">Set at '+esc(d.expAt)+'. Locked until tomorrow.</div>';
+    $('#t-explock').textContent = 'locked';
+  }else{
+    eb.innerHTML = '<textarea id="expIn" placeholder="What today is going to look like. One line."></textarea>'
+      + '<div class="row"><button class="btn gold" onclick="setExp()">Set for the day</button></div>'
+      + '<div class="meta">Compass #1. Once set it cannot be edited &mdash; the plan is not the work.</div>';
+    $('#t-explock').textContent = '';
+  }
+
+  // floor
+  const doneN = FLOOR.filter(f => d.floor[f.id]).length;
+  $('#t-floorct').textContent = doneN + ' / ' + FLOOR.length;
+  $('#t-floor').innerHTML = FLOOR.map(f =>
+    '<button class="f'+(d.floor[f.id]?' done':'')+'" onclick="toggleFloor(\''+f.id+'\')">'
+    + '<div class="box">'+CHECK+'</div><div><div class="t">'+f.t+'</div><div class="d">'+f.d+'</div></div></button>'
+  ).join('');
+}
+function setExp(){
+  const v = ($('#expIn').value||'').trim();
+  if(!v){ toast('Write the line first'); return; }
+  const d = day(); d.exp = v;
+  d.expAt = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  save(); renderToday();
+}
+function toggleFloor(id){
+  const d = day(); d.floor[id] = !d.floor[id];
+  save(); renderToday();
+  if(id === 'write' && d.floor.write) toast('Chain: ' + chain());
+}
+
+/* ---------- LOG ---------- */
+function stepper(val, onm, onp){
+  return '<div class="stepper"><button onclick="'+onm+'">&minus;</button>'
+       + '<div class="v">'+val+'</div><button onclick="'+onp+'">+</button></div>';
+}
+function renderLog(){
+  const d = day();
+  $('#l-date').textContent = longDate(new Date()) + ' — nothing here is scored';
+
+  const A = S.cfg.discA || 'Writing', B = S.cfg.discB || 'Directing', C = S.cfg.discC || 'Third';
+  const tot = (d.hrs.a + d.hrs.b + d.hrs.c);
+  $('#l-hours').innerHTML =
+      row(A, 'the one the others feed', d.hrs.a, 'a')
+    + row(B, 'in service of the above', d.hrs.b, 'b')
+    + row(C, 'the third', d.hrs.c, 'c')
+    + row('Linking', 'of the hours above &mdash; including linking what you read and saw', d.hrs.link, 'link')
+    + '<div class="mini">'+tot.toFixed(1)+' h total, '+d.hrs.link.toFixed(1)+' h linking. '
+    + (tot >= 10 ? 'Compass #6 met.' : 'Compass #6 asks 10. This is a dial, not a verdict.') + '</div>';
+
+  $('#l-net').innerHTML = row('Community', 'compass #7 &mdash; hours given to people', d.hrs.net, 'net');
+
+  $('#l-project').value = d.project || S.cfg.project || '';
+  const ap = S.cfg.project;
+  $('#l-projhint').innerHTML = ap
+    ? 'Active project this month: <span style="color:var(--gold)">'+esc(ap)+'</span>. Typing something else is allowed &mdash; it gets counted on the 1st.'
+    : 'No active project set. The monthly review sets it.';
+
+  $('#l-amb').innerHTML = AMBIENT.map(a =>
+    '<button class="tg'+(d.amb[a.id]?' on':'')+'" onclick="tgAmb(\''+a.id+'\')">'+a.t+'</button>').join('');
+
+  function row(nm, sub, v, f){
+    return '<div class="step"><div class="nm">'+esc(nm)+'<small>'+sub+'</small></div>'
+         + stepper(v.toFixed(1), "hrs('"+f+"',-0.5)", "hrs('"+f+"',0.5)") + '</div>';
+  }
+}
+function hrs(f, delta){
+  const d = day();
+  d.hrs[f] = Math.max(0, Math.min(24, Math.round((d.hrs[f] + delta)*2)/2));
+  save(); renderLog();
+}
+function tgAmb(id){ const d = day(); d.amb[id] = !d.amb[id]; save(); renderLog(); }
+document.addEventListener('input', e => {
+  if(e.target && e.target.id === 'l-project'){ day().project = e.target.value; save(); }
+});
+
+/* ---------- HORIZON ---------- */
+function renderHz(){
+  const h = S.cfg.hz, now = new Date();
+  const mk = monthKey(now), m = S.months[mk] || {};
+  const wk = weekKey(now), w = S.weeks[wk] || {};
+  const nextSun = nextUnlock('week');
+
+  let out = '';
+  out += box('The four years', h.four, false);
+  const rc = releaseCounts();
+  if(rc.written + rc.shot + rc.shown > 0){
+    out += box('Put out so far', rc.written + ' written · ' + rc.shot + ' shot · ' + rc.shown + ' shown'
+      + '\nRoute: ' + ROUTE_TARGET.written + ' written, ' + ROUTE_TARGET.shot + ' shot by 35.', true);
+  }
+  const aud = lastAudience();
+  if(aud){
+    const delta = aud.prev == null ? '' :
+      (aud.n - aud.prev >= 0 ? '  (+' + (aud.n - aud.prev) + ' on the year before)' : '  (' + (aud.n - aud.prev) + ' on the year before)');
+    out += box('Audience', aud.n.toLocaleString() + ' as of ' + aud.y + delta
+      + (S.years[aud.y].audNote ? '\n' + S.years[aud.y].audNote : ''), true);
+  }
+  out += box('The route', h.route, true);
+  out += box('This month', (S.cfg.project ? 'Active project: '+S.cfg.project+'\n' : '') + (h.month || 'Set at the monthly review.'), true);
+  out += box('This week', h.week || 'Set at the Sunday review.', true);
+  out += box('Love day', w.love ? 'Taken this week.' : 'Not yet taken. Compass: one day a week given to art, romance, or nature.', true);
+  out += box('Travel', h.travel, true);
+  out += box('Home', h.home, true);
+  out += '<div class="hz"><div class="k">Next review</div><div class="b d">Sunday review opens in '
+       + daysUntil(nextSun) + ' day' + (daysUntil(nextSun)===1?'':'s') + '.<br>Monthly review opens on the 1st.</div></div>';
+  $('#hz-body').innerHTML = out;
+
+  function box(k, body, dim){
+    return '<div class="hz"><div class="k">'+k+'</div><div class="b'+(dim?' d':'')+'">'+esc(body)+'</div></div>';
+  }
+}
+
+/* ---------- REVIEW ---------- */
+var revTab = null;
+function renderRev(){
+  const L = locks(), now = new Date();
+  $('#r-date').textContent = longDate(now);
+  const open = ['week','month','year'].filter(k => L[k]);
+  $('#r-state').textContent = open.length ? 'Open' : 'Locked';
+
+  if(!revTab || !L[revTab]) revTab = open[0] || null;
+
+  const names = {week:'Weekly', month:'Monthly', year:'Yearly'};
+  $('#r-tabs').innerHTML = ['week','month','year'].map(k =>
+    '<button class="tab'+(revTab===k?' on':'')+(L[k]?'':' lk')+'" onclick="'+(L[k]?"revTab='"+k+"';renderRev()":"toast('Locked')")+'">'
+    + names[k] + (L[k]?'':' · locked') + '</button>').join('');
+
+  if(!revTab){ $('#r-body').innerHTML = lockScreen(); return; }
+  if(revTab === 'week')  $('#r-body').innerHTML = weekForm();
+  if(revTab === 'month') $('#r-body').innerHTML = monthForm();
+  if(revTab === 'year')  $('#r-body').innerHTML = yearForm();
+}
+function lockScreen(){
+  const nw = nextUnlock('week'), nm = nextUnlock('month');
+  const soonest = nw < nm ? nw : nm;
+  const kind = nw < nm ? 'Weekly' : 'Monthly';
+  const n = daysUntil(soonest);
+  return '<div class="lock">'
+    + '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#8b8779" stroke-width="1.5" width="22" height="22">'
+    + '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>'
+    + '<h2>Nothing to review today</h2>'
+    + '<p>Weekly opens Sunday. Monthly opens the 1st through the 3rd. Yearly opens 28 December through 7 January.</p>'
+    + '<div class="cd">'+n+'</div><div class="cdl">day'+(n===1?'':'s')+' until the '+kind.toLowerCase()+' review</div>'
+    + '<p style="margin-top:26px;font-size:12.5px;color:var(--faint)">Reviewing the plan is not working on the film. '
+    + 'The lock is the feature, not the limitation.</p></div>';
+}
+
+function weekForm(){
+  const wk = weekKey(new Date()), w = week(wk);
+  const stats = rangeStats(addDays(new Date(),-6), new Date());
+  return '<div class="stats">'
+    + st(stats.write + '/7', 'days written') + st(stats.full + '/7', 'full floor days')
+    + st(stats.hours.toFixed(0) + 'h', 'creative hours') + st(stats.link.toFixed(0) + 'h', 'linking hours')
+    + '</div>'
+    + '<div class="card"><h3>Love day</h3><div class="h">Weekly compass #1 &mdash; a day given to art, romance, or nature.</div>'
+    + '<div class="tog"><button class="tg'+(w.love?' on':'')+'" onclick="wLove()">'+(w.love?'Taken this week':'Not taken')+'</button></div></div>'
+    + '<div class="card"><h3>Schedule</h3><div class="h">Weekly compass #2. Changes to the coming week &mdash; write them once, here, and then stop.</div>'
+    + '<textarea class="inp" id="w-sched" placeholder="What next week actually looks like.">'+esc(w.sched)+'</textarea></div>'
+    + '<div class="card"><h3>Note</h3><textarea class="inp" id="w-note" placeholder="Anything worth keeping from the week.">'+esc(w.note)+'</textarea></div>'
+    + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveWeek()">Close the week</button>';
+}
+function wLove(){ const w = week(); w.love = !w.love; save(); renderRev(); }
+function saveWeek(){
+  const w = week();
+  w.sched = $('#w-sched').value; w.note = $('#w-note').value; w.done = true;
+  S.cfg.hz.week = w.sched;
+  save(); toast('Week closed'); renderRev();
+}
+
+function monthForm(){
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const pk = monthKey(prev);
+  const st1 = new Date(prev.getFullYear(), prev.getMonth(), 1);
+  const en1 = new Date(now.getFullYear(), now.getMonth(), 0);
+  const s = rangeStats(st1, en1);
+  const m = month(monthKey(now));
+  const dim = en1.getDate();
+
+  let frag = '';
+  if(s.projects.length > 2){
+    frag = '<div class="flag"><b>' + s.projects.length + ' different projects took creative hours in '
+      + MON[prev.getMonth()] + '.</b><br>Reps only compound when they hit the same target. '
+      + s.projects.length + ' projects is ' + s.projects.length + ' first attempts, not ' + s.projects.length + ' reps.<br>'
+      + '<span style="color:var(--dim);font-size:12px">' + esc(s.projects.join(' · ')) + '</span></div>';
+  }else if(s.projects.length){
+    frag = '<div class="card"><div class="h" style="margin:0">Hours went to: <span style="color:var(--gold)">'
+      + esc(s.projects.join(' · ')) + '</span>. Concentrated. That is how reps stack.</div></div>';
+  }
+
+  return '<div class="card"><div class="h" style="margin:0">Reviewing <b style="color:var(--ink)">'
+      + MON[prev.getMonth()] + ' ' + prev.getFullYear() + '</b> &mdash; ' + dim + ' days.</div></div>'
+    + '<div class="stats">'
+    + st(s.write + '/' + dim, 'days written') + st(s.full + '/' + dim, 'full floor days')
+    + st(s.hours.toFixed(0) + 'h', 'creative hours') + st(s.link.toFixed(0) + 'h', 'linking hours')
+    + st(s.net.toFixed(0) + 'h', 'community') + st(s.read + '/' + dim, 'days read 15pp')
+    + st(s.family + '/' + dim, 'days family') + st(s.direct + '/' + dim, 'days directing')
+    + '</div>' + frag
+    + releaseCard(prev)
+    + '<div class="card"><h3>Active project for ' + MON[now.getMonth()] + '</h3>'
+    + '<div class="h">One. Changing it is allowed &mdash; here, once a month, deliberately. Not on a Tuesday because a new idea arrived.</div>'
+    + '<input class="inp" id="m-proj" value="' + esc(S.cfg.project) + '" placeholder="the one thing"></div>'
+    + '<div class="card"><h3>The month ahead</h3><div class="h">Monthly compass &mdash; what is coming, and anything to add. This becomes the Horizon.</div>'
+    + '<textarea class="inp" id="m-hz" placeholder="Shape of the month.">' + esc(S.cfg.hz.month) + '</textarea></div>'
+    + '<div class="card"><h3>Review</h3><textarea class="inp" id="m-note" placeholder="What actually happened. Plainly.">' + esc(m.note) + '</textarea></div>'
+    + '<div class="card"><h3>Disciplines</h3><div class="h">Three slots. The first is the one the others feed.</div>'
+    + '<input class="inp" id="m-a" value="' + esc(S.cfg.discA) + '" placeholder="the primary one">'
+    + '<input class="inp" id="m-b" value="' + esc(S.cfg.discB) + '" placeholder="in service of it">'
+    + '<input class="inp" id="m-c" value="' + esc(S.cfg.discC) + '" placeholder="the third"></div>'
+    + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveMonth()">Close the month</button>';
+}
+function releaseCard(prev){
+  const from = keyOf(new Date(prev.getFullYear(), prev.getMonth(), 1));
+  const to   = keyOf(new Date(prev.getFullYear(), prev.getMonth()+1, 0));
+  const mine = S.releases.filter(r => r.date >= from && r.date <= to);
+  // anything logged this month counts too — you record it when you close the month
+  const now  = new Date();
+  const tFrom = keyOf(new Date(now.getFullYear(), now.getMonth(), 1));
+  const recent = S.releases.filter(r => r.date >= tFrom);
+  const all = mine.concat(recent);
+  let list = '';
+  if(all.length){
+    list = all.map(r => '<div class="step"><div class="nm">' + esc(r.title)
+      + '<small>' + (RKINDS.filter(k => k.id === r.kind)[0]||{t:''}).t
+      + (r.note ? ' &middot; ' + esc(r.note) : '') + '</small></div>'
+      + '<button class="sz" onclick="delRelease(\'' + r.id + '\')">remove</button></div>').join('');
+  }else{
+    list = '<div class="mini" style="margin:0">Nothing yet. A month with none is information, not a verdict — but four in a row is the thing to notice.</div>';
+  }
+  return '<div class="card"><h3>Put out</h3>'
+    + '<div class="h">Hours do not make an audience. Finished things people see do — so this is the only number upstream of the four-year goal.</div>'
+    + list
+    + '<div class="row"><button class="btn gold" onclick="addRelease()">Add something</button></div></div>';
+}
+function saveMonth(){
+  const m = month();
+  S.cfg.project = $('#m-proj').value.trim();
+  S.cfg.hz.month = $('#m-hz').value;
+  S.cfg.discA = $('#m-a').value.trim();
+  S.cfg.discB = $('#m-b').value.trim();
+  S.cfg.discC = $('#m-c').value.trim();
+  m.note = $('#m-note').value; m.project = S.cfg.project; m.done = true;
+  save(); toast('Month closed'); renderRev();
+}
+
+function yearForm(){
+  const now = new Date();
+  const yk = String(now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear());
+  const y = year(yk);
+  const s = rangeStats(new Date(+yk,0,1), new Date(+yk,11,31));
+  return '<div class="card"><div class="h" style="margin:0">Yearly compass &mdash; reviewing <b style="color:var(--ink)">' + yk + '</b>.</div></div>'
+    + '<div class="stats">'
+    + st(s.write, 'days written') + st(s.full, 'full floor days')
+    + st(s.hours.toFixed(0) + 'h', 'creative hours') + st(s.link.toFixed(0) + 'h', 'linking hours &mdash; the maps')
+    + st(s.projects.length, 'distinct projects') + st(s.loveWeeks, 'love days taken')
+    + '</div>'
+    + (() => {
+        const c = releaseCounts(yk + '-01-01', yk + '-12-31');
+        const all = releaseCounts();
+        return '<div class="card"><h3>Put out in ' + yk + '</h3>'
+          + '<div class="h">Against the route: ' + ROUTE_TARGET.written + ' written and ' + ROUTE_TARGET.shot
+          + ' shot across four years — about ' + (ROUTE_TARGET.written/4) + ' and ' + (ROUTE_TARGET.shot/4) + ' a year.</div>'
+          + '<div class="stats" style="margin:0">'
+          + st(c.written, 'written this year') + st(c.shot, 'shot this year')
+          + st(c.shown, 'shown to people') + st(all.written + '/' + ROUTE_TARGET.written, 'written, running total')
+          + '</div></div>';
+      })()
+    + '<div class="card"><h3>Artistic mastery</h3><textarea class="inp" id="y-1" placeholder="Progress, against the route. Evidence, not feeling.">' + esc(y.mastery) + '</textarea></div>'
+    + '<div class="card"><h3>Audience</h3>'
+    + '<div class="h">Scale is part of the goal, so it gets counted rather than felt. One number you actually trust &mdash; '
+    + 'people who turn up for the work, however you choose to define that. Keep the definition the same every year or the curve means nothing.</div>'
+    + '<input class="inp" id="y-aud" type="number" min="0" value="' + (y.audN == null ? '' : y.audN) + '" placeholder="the number — 0 is a real answer">'
+    + '<input class="inp" id="y-audnote" value="' + esc(y.audNote) + '" placeholder="what you counted — e.g. mailing list, or people who came to a screening">'
+    + '</div>'
+    + '<div class="card"><h3>Community &amp; network</h3><textarea class="inp" id="y-2" placeholder="Who knows the work now who did not in January.">' + esc(y.network) + '</textarea></div>'
+    + '<div class="card"><h3>Maps &mdash; number and density</h3><textarea class="inp" id="y-3" placeholder="What got linked to what.">' + esc(y.maps) + '</textarea></div>'
+    + '<div class="card"><h3>Future compasses</h3><div class="h">The only place these change. Four years, route, travel, home.</div>'
+    + '<textarea class="inp" id="y-4" placeholder="Four-year target — revised or held.">' + esc(S.cfg.hz.four) + '</textarea>'
+    + '<textarea class="inp" id="y-5" placeholder="The route.">' + esc(S.cfg.hz.route) + '</textarea>'
+    + '<textarea class="inp" id="y-6" placeholder="Travel.">' + esc(S.cfg.hz.travel) + '</textarea>'
+    + '<textarea class="inp" id="y-7" placeholder="Home.">' + esc(S.cfg.hz.home) + '</textarea></div>'
+    + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveYear(\'' + yk + '\')">Close the year</button>';
+}
+function saveYear(yk){
+  const y = year(yk);
+  y.mastery = $('#y-1').value; y.network = $('#y-2').value; y.maps = $('#y-3').value; y.done = true;
+  const av = ($('#y-aud').value||'').trim();
+  y.audN = av === '' ? null : Math.max(0, parseInt(av,10) || 0);
+  y.audNote = $('#y-audnote').value.trim();
+  S.cfg.hz.four = $('#y-4').value; S.cfg.hz.route = $('#y-5').value;
+  S.cfg.hz.travel = $('#y-6').value; S.cfg.hz.home = $('#y-7').value;
+  save(); toast('Year closed'); renderRev();
+}
+function st(v, l){ return '<div class="st"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
+
+function rangeStats(from, to){
+  const r = {write:0, full:0, read:0, family:0, direct:0, hours:0, link:0, net:0, projects:[], loveWeeks:0};
+  const seen = {};
+  let d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+  while(d <= end){
+    const rec = S.days[keyOf(d)];
+    if(rec){
+      const f = rec.floor || {};
+      if(f.write) r.write++;
+      if(f.read) r.read++;
+      if(f.family) r.family++;
+      if(f.direct) r.direct++;
+      if(FLOOR.every(x => f[x.id])) r.full++;
+      const h = rec.hrs || {};
+      r.hours += (h.a||0) + (h.b||0) + (h.c||0);
+      r.link  += (h.link||0);
+      r.net   += (h.net||0);
+      const p = (rec.project||'').trim();
+      if(p && ((h.a||0)+(h.b||0)) > 0 && !seen[p.toLowerCase()]){ seen[p.toLowerCase()] = 1; r.projects.push(p); }
+    }
+    d = addDays(d,1);
+  }
+  for(const k in S.weeks){ if(S.weeks[k].love) r.loveWeeks++; }
+  return r;
+}
+
+/* ---------- GROUND ---------- */
+function daysSince(iso){
+  if(!iso) return null;
+  const p = iso.split('-');
+  const then = new Date(+p[0], +p[1]-1, +p[2]);
+  const now = new Date(); const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.round((t - then)/86400000));
+}
+// ratio > 1 = ripe, .7–1 = ripening, < .7 = fresh. Never "overdue".
+function ripeness(g){
+  const ds = daysSince(g.last);
+  if(ds === null) return {r:1.4, ds:null, s:'ripe'};      // never done: ripe by definition
+  const r = ds / Math.max(1, g.days);
+  return {r:r, ds:ds, s: r >= 1 ? 'ripe' : (r >= 0.7 ? 'rip' : 'fresh')};
+}
+function groundSorted(){
+  return S.ground.map(g => ({g:g, m:ripeness(g)})).sort((a,b) => b.m.r - a.m.r);
+}
+function agoText(m, g){
+  if(m.ds === null) return '<b>never</b>every ' + cadText(g.days);
+  if(m.ds === 0)    return '<b>today</b>every ' + cadText(g.days);
+  return '<b>' + m.ds + 'd ago</b>every ' + cadText(g.days);
+}
+function cadText(d){
+  if(d % 365 === 0) return (d/365) + 'y';
+  if(d % 30 === 0 || d >= 60) return Math.round(d/30) + 'mo';
+  if(d % 7 === 0) return (d/7) + 'w';
+  return d + 'd';
+}
+
+const SIZES = {s:'2 min', m:'20 min', l:'an hour+'};
+var gTab = 'stuck';
+
+function renderGround(){
+  const all = groundSorted();
+  const ripe = all.filter(x => x.m.s === 'ripe').length;
+  const openStuck = S.stuck.filter(s => !s.done);
+
+  $('#g-tabs').innerHTML =
+      '<button class="tab' + (gTab==='stuck'?' on':'') + '" onclick="gTab=\'stuck\';renderGround()">Stuck · ' + openStuck.length + '</button>'
+    + '<button class="tab' + (gTab==='standing'?' on':'') + '" onclick="gTab=\'standing\';renderGround()">Standing · ' + ripe + ' ripe</button>';
+
+  const pool = pickPool();
+  $('#g-start').innerHTML = pool.length
+    ? '<button class="startone" onclick="startOne()">Start one &nbsp;&middot;&nbsp; it picks, you sit down</button>'
+      + '<div class="row" style="margin-bottom:14px"><button class="btn" style="flex:1" onclick="startOne(true,\'s\')">Just something small</button></div>'
+    : '<div class="card"><div class="h" style="margin:0">Nothing waiting. Ground is clear.</div></div>';
+
+  $('#g-body').innerHTML = gTab === 'stuck' ? stuckList() : standingList(all);
+  $('#g-foot').textContent = gTab === 'stuck'
+    ? 'These are one-offs you already know about. The list is not the problem — knowing about them was never the missing piece. The timer is.'
+    : 'Items ripen, they do not go overdue. A haircut at seven weeks is ripe, not a failure — so the list stays something you are willing to open.';
+}
+
+function standingList(all){
+  let out = '';
+  ZONES.forEach(z => {
+    const items = all.filter(x => x.g.zone === z.id);
+    if(!items.length) return;
+    const zr = items.filter(x => x.m.s === 'ripe').length;
+    out += '<div class="zone">' + z.t + (zr ? ' &nbsp;·&nbsp; ' + zr + ' ripe' : '') + '</div>';
+    items.forEach(x => {
+      out += '<button class="g" onclick="openGround(\'' + x.g.id + '\')">'
+        + '<div class="pip ' + x.m.s + '"></div>'
+        + '<div class="nm"><b>' + esc(x.g.name) + '</b><small>' + esc(x.g.next || 'no next step written') + '</small></div>'
+        + '<div class="ago">' + agoText(x.m, x.g) + '</div></button>';
+    });
+  });
+  return out || '<div class="card"><div class="h" style="margin:0">Nothing here yet.</div></div>';
+}
+
+function stuckAge(s){
+  const d = daysSince(s.added);
+  return d === null ? '' : (d === 0 ? 'today' : d + 'd');
+}
+function stuckList(){
+  const open = S.stuck.filter(s => !s.done).sort((a,b) => (a.added < b.added ? -1 : 1)); // oldest first
+  const done = S.stuck.filter(s => s.done).slice(-12).reverse();
+  let out = '';
+  if(!open.length && !done.length){
+    return '<div class="card"><div class="h" style="margin:0">Empty. Put anything here you keep meaning to do &mdash; '
+      + 'the ones that have been sitting longest come to the top, because those are the ones being avoided.</div></div>';
+  }
+  if(open.length){
+    out += '<div class="zone">Waiting &nbsp;·&nbsp; oldest first</div>';
+    open.forEach(s => {
+      out += '<button class="g" onclick="openStuck(\'' + s.id + '\')">'
+        + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + esc(s.next || 'no next step written — this is usually why it is stuck') + '</small></div>'
+        + '<div class="sz ' + s.size + '">' + SIZES[s.size] + '</div>'
+        + '<div class="ago"><b>' + stuckAge(s) + '</b></div></button>';
+    });
+  }
+  if(done.length){
+    out += '<div class="zone">Done</div>';
+    done.forEach(s => {
+      out += '<button class="g stuckdone" onclick="openStuck(\'' + s.id + '\')">'
+        + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + esc(s.doneAt || '') + '</small></div></button>';
+    });
+  }
+  return out;
+}
+
+/* the picker: standing items that are ripe, plus stuck one-offs, oldest first.
+   choosing between thirty things is where initiation dies, so it chooses. */
+function pickPool(sizeOnly){
+  const a = groundSorted().filter(x => x.m.s !== 'fresh')
+    .map(x => ({kind:'g', id:x.g.id, name:x.g.name, next:x.g.next, when:x.g.when,
+                sub:(x.m.ds === null ? 'never logged' : x.m.ds + ' days since last'), size:'m'}));
+  const b = S.stuck.filter(s => !s.done).sort((x,y) => (x.added < y.added ? -1 : 1))
+    .map(s => ({kind:'s', id:s.id, name:s.name, next:s.next, when:s.when,
+                sub:'stuck ' + stuckAge(s), size:s.size}));
+  let pool = b.concat(a);
+  if(sizeOnly) pool = pool.filter(p => p.size === sizeOnly);
+  return pool;
+}
+
+var oneIdx = 0, onePool = [];
+function startOne(reset, sizeOnly){
+  onePool = pickPool(sizeOnly);
+  if(!onePool.length){ toast(sizeOnly ? 'Nothing small waiting' : 'Nothing waiting'); return; }
+  if(reset !== false) oneIdx = 0;
+  if(oneIdx >= onePool.length) oneIdx = 0;
+  const p = onePool[oneIdx];
+  $('#sheet').innerHTML = '<div class="one">'
+    + '<div class="k">' + esc(p.name) + '</div>'
+    + '<div class="act">' + esc(p.next || 'Write the first physical step — that is the whole blockage.') + '</div>'
+    + (p.when ? '<div class="whn">' + esc(p.when) + '</div>' : '')
+    + '<div class="ttl">' + esc(p.sub) + ' &middot; ' + (oneIdx+1) + ' of ' + onePool.length + '</div>'
+    + '</div>'
+    + '<div class="row" style="margin-top:20px">'
+    + '<button class="btn gold" style="flex:1;padding:14px" onclick="runTimer(\'' + p.kind + '\',\'' + p.id + '\',5)">Sit with it 5 min</button></div>'
+    + '<div class="row">'
+    + '<button class="btn" style="flex:1" onclick="runTimer(\'' + p.kind + '\',\'' + p.id + '\',2)">2 min</button>'
+    + '<button class="btn" style="flex:1" onclick="runTimer(\'' + p.kind + '\',\'' + p.id + '\',15)">15 min</button>'
+    + '<button class="btn" style="flex:1" onclick="oneIdx++;startOne(false)">Next</button></div>'
+    + '<div class="row"><button class="btn" style="flex:1" onclick="' + (p.kind==='g'?'markDone':'stuckDone') + '(\'' + p.id + '\')">Already done</button>'
+    + '<button class="btn" onclick="closeMod()">Close</button></div>';
+  $('#mod').classList.add('on');
+}
+
+/* a countdown turns "do the task" — unbounded, and therefore frightening —
+   into "stay in the chair for five minutes", which is a thing with an end. */
+var tHandle = null, tLock = false;
+function runTimer(kind, id, mins){
+  let left = mins * 60;
+  tLock = true;
+  const item = kind === 'g' ? findG(id) : findStuck(id);
+  if(!item){ tLock = false; return; }
+  const draw = () => {
+    const mm = Math.floor(left/60), ss = left % 60;
+    $('#sheet').innerHTML = '<div class="clock">'
+      + '<div class="s">' + esc(item.name) + '</div>'
+      + '<div class="a">' + esc(item.next || 'Begin anywhere.') + '</div>'
+      + '<div class="t">' + mm + ':' + pad(ss) + '</div>'
+      + '<div class="s" style="margin-top:14px">' + (left > 0 ? 'stay' : 'time') + '</div></div>'
+      + '<div class="row" style="margin-top:22px">'
+      + '<button class="btn gold" style="flex:1;padding:13px" onclick="stopTimer();' + (kind==='g'?'markDone':'stuckDone') + '(\'' + id + '\')">Done</button>'
+      + '<button class="btn" style="flex:1;padding:13px" onclick="stopTimer();closeMod()">Stop</button></div>'
+      + '<div class="mini">Finishing is not the deal. Staying until the clock runs out is the whole deal &mdash; '
+      + 'and most of the time you will carry on past it, because stopping mid-thing is the harder move.</div>';
+  };
+  draw();
+  clearInterval(tHandle);
+  tHandle = setInterval(() => {
+    left--;
+    if(left <= 0){
+      left = 0; draw(); stopTimer();
+      toast('Time. Carry on or stop — both count.');
+      if(navigator.vibrate) try{ navigator.vibrate([180,90,180]); }catch(e){}
+      return;
+    }
+    draw();
+  }, 1000);
+  $('#mod').classList.add('on');
+}
+function stopTimer(){ clearInterval(tHandle); tHandle = null; tLock = false; }
+
+function findG(id){ return S.ground.filter(g => g.id === id)[0]; }
+function findStuck(id){ return S.stuck.filter(s => s.id === id)[0]; }
+
+/* ---------- STUCK: one-offs that never initiate ---------- */
+function openStuck(id){
+  const s = findStuck(id); if(!s) return;
+  $('#sheet').innerHTML = '<h3>' + esc(s.name) + '</h3>'
+    + '<div class="hh">' + (s.done ? 'Done ' + esc(s.doneAt) + '.' : 'On the list ' + stuckAge(s) + '. ' + SIZES[s.size] + '.') + '</div>'
+    + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:4px">Next physical step</div>'
+    + '<input class="inp" id="sk-next" value="' + esc(s.next) + '" placeholder="the first thing your hands do">'
+    + '<div class="mini">Not the task &mdash; the movement. Not "do the taxes", but "open the drawer, take out the brown folder". '
+    + 'An item without one of these is the definition of stuck.</div>'
+    + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">When &mdash; if / then</div>'
+    + '<input class="inp" id="sk-when" value="' + esc(s.when) + '" placeholder="e.g. tomorrow, before I leave">'
+    + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">How big</div>'
+    + '<div class="tog" id="sk-size">' + Object.keys(SIZES).map(k =>
+        '<button class="tg' + (s.size===k?' on':'') + '" data-s="' + k + '" onclick="pickZone(this)">' + SIZES[k] + '</button>').join('') + '</div>'
+    + '<div class="row" style="margin-top:18px">'
+    + '<button class="btn gold" style="flex:1;padding:13px" onclick="startStuckTimer(\'' + s.id + '\')">Start 5 min</button></div>'
+    + '<div class="row">'
+    + '<button class="btn" style="flex:1" onclick="saveStuck(\'' + s.id + '\')">Save</button>'
+    + '<button class="btn" style="flex:1" onclick="stuckDone(\'' + s.id + '\')">' + (s.done ? 'Reopen' : 'Done') + '</button></div>'
+    + '<div class="row"><button class="btn" onclick="closeMod()">Close</button>'
+    + '<button class="btn" style="color:var(--red)" onclick="delStuck(\'' + s.id + '\')">Delete</button></div>';
+  $('#mod').classList.add('on');
+}
+function readStuckForm(s){
+  const n = $('#sk-next'), w = $('#sk-when'), z = $('#sk-size');
+  if(n) s.next = n.value.trim();
+  if(w) s.when = w.value.trim();
+  if(z){ const on = z.querySelector('.tg.on'); if(on) s.size = on.dataset.s; }
+}
+function saveStuck(id){
+  const s = findStuck(id); if(!s) return;
+  readStuckForm(s); save(); renderGround();
+  if(!tLock){ closeMod(); toast('Saved'); }
+}
+function stuckDone(id){
+  const s = findStuck(id); if(!s) return;
+  readStuckForm(s);
+  s.done = !s.done;
+  s.doneAt = s.done ? todayKey() : null;
+  save(); closeMod(); renderGround();
+  toast(s.done ? 'Off the list' : 'Back on the list');
+}
+function startStuckTimer(id){
+  const s = findStuck(id); if(!s) return;
+  readStuckForm(s); save(); renderGround(); runTimer('s', id, 5);
+}
+function delStuck(id){ S.stuck = S.stuck.filter(s => s.id !== id); save(); closeMod(); renderGround(); toast('Removed'); }
+function editStuck(){
+  $('#sheet').innerHTML = '<h3>Add to Stuck</h3>'
+    + '<div class="hh">Something one-off you already know needs doing. The next step matters more than the name.</div>'
+    + '<input class="inp" id="sa-name" placeholder="what it is">'
+    + '<input class="inp" id="sa-next" placeholder="first physical step">'
+    + '<input class="inp" id="sa-when" placeholder="when — if / then (optional)">'
+    + '<div class="tog" style="margin-top:12px" id="sa-size">' + Object.keys(SIZES).map((k,i) =>
+        '<button class="tg' + (i===1?' on':'') + '" data-s="' + k + '" onclick="pickZone(this)">' + SIZES[k] + '</button>').join('') + '</div>'
+    + '<div class="row" style="margin-top:16px"><button class="btn gold" style="flex:1;padding:13px" onclick="addStuck()">Add</button>'
+    + '<button class="btn" onclick="closeMod()">Cancel</button></div>';
+  $('#mod').classList.add('on');
+}
+function addStuck(){
+  const nm = ($('#sa-name').value||'').trim();
+  if(!nm){ toast('Needs a name'); return; }
+  const on = $('#sa-size').querySelector('.tg.on');
+  S.stuck.push({
+    id:'s' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    name:nm, next:($('#sa-next').value||'').trim(), when:($('#sa-when').value||'').trim(),
+    size: on ? on.dataset.s : 'm', added:todayKey(), done:false, doneAt:null
+  });
+  save(); closeMod(); gTab = 'stuck'; renderGround(); toast('Added');
+}
+
+function openGround(id){
+  const g = findG(id); if(!g) return;
+  const m = ripeness(g);
+  $('#sheet').innerHTML = '<h3>' + esc(g.name) + '</h3>'
+    + '<div class="hh">' + (m.ds === null ? 'Never logged.' : 'Last done ' + m.ds + ' days ago.')
+    + ' Every ' + cadText(g.days) + '. ' + (m.s === 'ripe' ? 'Ripe.' : m.s === 'rip' ? 'Ripening.' : 'Fresh.') + '</div>'
+    + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:4px">Next physical step</div>'
+    + '<input class="inp" id="gn-next" value="' + esc(g.next) + '" placeholder="the first thing your hands do">'
+    + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">When &mdash; if / then</div>'
+    + '<input class="inp" id="gn-when" value="' + esc(g.when) + '" placeholder="e.g. Saturday, after coffee">'
+    + '<div class="mini">Naming a specific when-and-where roughly doubles follow-through against intention alone. It is the most reliable single trick in this app.</div>'
+    + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">Every how many days</div>'
+    + '<input class="inp" id="gn-days" type="number" min="1" max="1095" value="' + g.days + '">'
+    + '<div class="row" style="margin-top:16px">'
+    + '<button class="btn gold" style="flex:1;padding:13px" onclick="markDone(\'' + g.id + '\')">Mark done today</button></div>'
+    + '<div class="row">'
+    + '<button class="btn" style="flex:1" onclick="saveGround(\'' + g.id + '\')">Save</button>'
+    + '<button class="btn" style="flex:1" onclick="scheduleGround(\'' + g.id + '\')">Put in calendar</button></div>'
+    + '<div class="row"><button class="btn" onclick="closeMod()">Close</button>'
+    + '<button class="btn" style="color:var(--red)" onclick="delGround(\'' + g.id + '\')">Delete</button></div>';
+  $('#mod').classList.add('on');
+}
+function readGroundForm(g){
+  const n = $('#gn-next'), w = $('#gn-when'), d = $('#gn-days');
+  if(n) g.next = n.value.trim();
+  if(w) g.when = w.value.trim();
+  if(d) g.days = Math.max(1, Math.min(1095, parseInt(d.value,10) || g.days));
+}
+function saveGround(id){
+  const g = findG(id); if(!g) return;
+  readGroundForm(g); save(); closeMod(); renderGround(); toast('Saved');
+}
+function markDone(id){
+  const g = findG(id); if(!g) return;
+  readGroundForm(g);
+  g.last = todayKey();
+  g.hist = (g.hist||[]).concat([g.last]).slice(-40);
+  save(); closeMod(); renderGround(); toast(g.name + ' — logged');
+}
+function delGround(id){
+  S.ground = S.ground.filter(g => g.id !== id);
+  save(); closeMod(); renderGround(); toast('Removed');
+}
+function editGround(){
+  $('#sheet').innerHTML = '<h3>Add a standing item</h3>'
+    + '<div class="hh">Something that recurs without a fixed date. Appointments go in your calendar, not here.</div>'
+    + '<input class="inp" id="ga-name" placeholder="name">'
+    + '<input class="inp" id="ga-next" placeholder="next physical step">'
+    + '<input class="inp" id="ga-when" placeholder="when — if / then (optional)">'
+    + '<input class="inp" id="ga-days" type="number" min="1" max="1095" value="7" placeholder="every how many days">'
+    + '<div class="tog" style="margin-top:12px" id="ga-zone">'
+    + ZONES.map((z,i) => '<button class="tg' + (i===0?' on':'') + '" data-z="' + z.id + '" onclick="pickZone(this)">' + z.t + '</button>').join('')
+    + '</div>'
+    + '<div class="row" style="margin-top:16px"><button class="btn gold" style="flex:1;padding:13px" onclick="addGround()">Add</button>'
+    + '<button class="btn" onclick="closeMod()">Cancel</button></div>';
+  $('#mod').classList.add('on');
+}
+function pickZone(el){
+  el.parentNode.querySelectorAll('.tg').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+}
+function addGround(){
+  const nm = ($('#ga-name').value||'').trim();
+  if(!nm){ toast('Needs a name'); return; }
+  const zEl = $('#ga-zone').querySelector('.tg.on');
+  S.ground.push({
+    id:'g' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    name:nm,
+    zone: zEl ? zEl.dataset.z : 'home',
+    days: Math.max(1, Math.min(1095, parseInt($('#ga-days').value,10) || 7)),
+    next: ($('#ga-next').value||'').trim(),
+    when: ($('#ga-when').value||'').trim(),
+    last:null, hist:[]
+  });
+  save(); closeMod(); renderGround(); toast('Added');
+}
+
+/* calendar handoff — the app cannot send notifications, so it hands the item
+   to something that can, with the alarm written into the event itself. */
+function scheduleGround(id){
+  const g = findG(id); if(!g) return;
+  readGroundForm(g); save();
+  const t = addDays(new Date(), 1);
+  $('#sheet').innerHTML = '<h3>Put it in the calendar</h3>'
+    + '<div class="hh">Makes a real calendar event with a 30-minute alert baked into it, so it does not depend on your calendar\'s default settings. Opens in whatever calendar app you use.</div>'
+    + '<input class="inp" id="sc-d" type="date" value="' + keyOf(t) + '">'
+    + '<input class="inp" id="sc-t" type="time" value="10:00">'
+    + '<div class="row" style="margin-top:16px"><button class="btn gold" style="flex:1;padding:13px" onclick="makeICS(\'' + g.id + '\')">Create event</button>'
+    + '<button class="btn" onclick="openGround(\'' + g.id + '\')">Back</button></div>';
+}
+function icsEsc(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
+function icsStamp(d){
+  return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T'
+       + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+}
+function makeICS(id){
+  const g = findG(id); if(!g) return;
+  const dv = $('#sc-d').value, tv = $('#sc-t').value || '10:00';
+  if(!dv){ toast('Pick a date'); return; }
+  const dp = dv.split('-'), tp = tv.split(':');
+  const start = new Date(+dp[0], +dp[1]-1, +dp[2], +tp[0], +tp[1], 0);
+  if(isNaN(start.getTime())){ toast('Bad date'); return; }
+  const end = new Date(start.getTime() + 45*60000);
+  const lines = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Compass//Ground//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:' + g.id + '-' + Date.now() + '@compass.local',
+    'DTSTAMP:' + icsStamp(new Date()),
+    'DTSTART:' + icsStamp(start),
+    'DTEND:' + icsStamp(end),
+    'SUMMARY:' + icsEsc(g.name),
+    'DESCRIPTION:' + icsEsc((g.next || '') + (g.when ? '\n' + g.when : '')),
+    'BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:' + icsEsc(g.name),'END:VALARM',
+    'END:VEVENT','END:VCALENDAR'
+  ];
+  const blob = new Blob([lines.join('\r\n')], {type:'text/calendar'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = g.name.replace(/[^\w\- ]+/g,'').slice(0,40).trim().replace(/\s+/g,'-') + '.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  closeMod(); toast('Event created — open it to add');
+}
+
+/* ---------- RELEASED ----------
+   The audience number is an outcome; it has one input, which is work
+   leaving the building. Hours do not produce an audience — finished
+   things seen by people do. So finished things get counted. */
+const RKINDS = [{id:'written',t:'Written'},{id:'shot',t:'Shot'},{id:'shown',t:'Shown to people'}];
+const ROUTE_TARGET = {written:20, shot:10};
+
+function releaseCounts(from, to){
+  const c = {written:0, shot:0, shown:0};
+  S.releases.forEach(r => {
+    if(from && r.date < from) return;
+    if(to && r.date > to) return;
+    if(c[r.kind] !== undefined) c[r.kind]++;
+  });
+  return c;
+}
+function addRelease(back){
+  $('#sheet').innerHTML = '<h3>Put out</h3>'
+    + '<div class="hh">Something finished this month. Written means a draft you would let someone read. '
+    + 'Shown means actual people saw it &mdash; that is the only one the audience number responds to.</div>'
+    + '<input class="inp" id="rl-title" placeholder="what it was">'
+    + '<div class="tog" style="margin-top:12px" id="rl-kind">'
+    + RKINDS.map((k,i) => '<button class="tg' + (i===0?' on':'') + '" data-k="' + k.id + '" onclick="pickZone(this)">' + k.t + '</button>').join('')
+    + '</div>'
+    + '<input class="inp" id="rl-note" placeholder="where / who saw it (optional)" style="margin-top:12px">'
+    + '<div class="row" style="margin-top:16px"><button class="btn gold" style="flex:1;padding:13px" onclick="saveRelease()">Add</button>'
+    + '<button class="btn" onclick="closeMod();renderRev()">Cancel</button></div>';
+  $('#mod').classList.add('on');
+}
+function saveRelease(){
+  const t = ($('#rl-title').value||'').trim();
+  if(!t){ toast('Needs a name'); return; }
+  const on = $('#rl-kind').querySelector('.tg.on');
+  S.releases.push({id:'r'+Date.now().toString(36), title:t, kind: on ? on.dataset.k : 'written',
+                   note:($('#rl-note').value||'').trim(), date:todayKey()});
+  save(); closeMod(); renderRev(); toast('Counted');
+}
+function delRelease(id){ S.releases = S.releases.filter(r => r.id !== id); save(); renderRev(); }
+
+/* ---------- SOURCES ---------- */
+var sQuery = '';
+function domainOf(u){
+  if(!u) return '';
+  return u.replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+}
+function renderSrc(){
+  const q = sQuery.toLowerCase().trim();
+  const list = S.sources.filter(s => !q ||
+      s.name.toLowerCase().indexOf(q) > -1 ||
+      (s.url||'').toLowerCase().indexOf(q) > -1 ||
+      (s.note||'').toLowerCase().indexOf(q) > -1);
+
+  const unseen = S.sources.filter(s => s.url && !s.last).length;
+  $('#s-count').textContent = S.sources.length + ' · ' + unseen + ' unopened';
+
+  $('#s-rand').innerHTML = '<button class="startone" onclick="somewhereNew()">'
+    + 'Somewhere new &nbsp;&middot;&nbsp; the one you have left longest</button>';
+
+  let out = '';
+  SGROUPS.forEach(gr => {
+    const items = list.filter(s => s.group === gr.id);
+    if(!items.length) return;
+    out += '<div class="zone">' + gr.t + '</div>';
+    items.forEach(s => {
+      const ds = daysSince(s.last);
+      const ago = s.last ? (ds === 0 ? 'today' : ds + 'd') : '&mdash;';
+      const sub = s.note ? esc(s.note) : esc(domainOf(s.url));
+      if(s.url){
+        out += '<a class="g" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer" '
+          + 'onclick="hitSource(\'' + s.id + '\')" style="text-decoration:none;color:inherit">'
+          + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + sub + '</small></div>'
+          + '<div class="ago"><b>' + ago + '</b></div>'
+          + '<button class="sz" onclick="event.preventDefault();event.stopPropagation();editSource(\'' + s.id + '\')">edit</button></a>';
+      }else{
+        out += '<button class="g" onclick="editSource(\'' + s.id + '\')" style="opacity:.6">'
+          + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + sub + '</small></div>'
+          + '<div class="sz">add url</div></button>';
+      }
+    });
+  });
+  $('#s-list').innerHTML = out || '<div class="card"><div class="h" style="margin:0">Nothing matches.</div></div>';
+}
+function hitSource(id){
+  const s = S.sources.filter(x => x.id === id)[0];
+  if(!s) return;
+  s.last = todayKey(); s.hits = (s.hits||0) + 1;
+  save(); renderSrc();
+}
+/* least-recently-opened from the ones actually meant for reading */
+function somewhereNew(){
+  const pool = S.sources.filter(s => s.url && (s.group === 'top' || s.group === 'read' || s.group === 'check'));
+  if(!pool.length){ toast('Nothing to open'); return; }
+  pool.sort((a,b) => {
+    if(!a.last && !b.last) return 0;
+    if(!a.last) return -1;
+    if(!b.last) return 1;
+    return a.last < b.last ? -1 : 1;
+  });
+  const s = pool[0];
+  hitSource(s.id);
+  window.open(s.url, '_blank', 'noopener');
+  toast(s.name);
+}
+function editSource(id){
+  const s = id ? S.sources.filter(x => x.id === id)[0] : null;
+  $('#sheet').innerHTML = '<h3>' + (s ? esc(s.name) : 'Add a source') + '</h3>'
+    + (s && !s.url ? '<div class="hh">I could not work out what this one was from your list — paste the address and it joins the rest.</div>' : '')
+    + '<input class="inp" id="sr-name" value="' + esc(s ? s.name : '') + '" placeholder="name">'
+    + '<input class="inp" id="sr-url" type="url" value="' + esc(s ? s.url : '') + '" placeholder="https://">'
+    + '<input class="inp" id="sr-note" value="' + esc(s ? s.note : '') + '" placeholder="note (optional)">'
+    + '<div class="tog" style="margin-top:12px" id="sr-grp">'
+    + SGROUPS.map(g => '<button class="tg' + ((s ? s.group : 'read') === g.id ? ' on' : '') + '" data-g="' + g.id + '" onclick="pickZone(this)">' + g.t + '</button>').join('')
+    + '</div>'
+    + '<div class="row" style="margin-top:16px"><button class="btn gold" style="flex:1;padding:13px" onclick="saveSource(' + (s ? "'"+s.id+"'" : 'null') + ')">Save</button>'
+    + '<button class="btn" onclick="closeMod()">Cancel</button></div>'
+    + (s ? '<div class="row"><button class="btn" style="color:var(--red)" onclick="delSource(\'' + s.id + '\')">Delete</button></div>' : '');
+  $('#mod').classList.add('on');
+}
+function saveSource(id){
+  const nm = ($('#sr-name').value||'').trim();
+  if(!nm){ toast('Needs a name'); return; }
+  let url = ($('#sr-url').value||'').trim();
+  if(url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const on = $('#sr-grp').querySelector('.tg.on');
+  const grp = on ? on.dataset.g : 'read';
+  const note = ($('#sr-note').value||'').trim();
+  if(id){
+    const s = S.sources.filter(x => x.id === id)[0];
+    if(s){ s.name = nm; s.url = url; s.group = url ? (grp === 'open' ? 'read' : grp) : grp; s.note = note; }
+  }else{
+    S.sources.push({id:'src' + Date.now().toString(36), name:nm, url:url, group:grp, note:note, last:null, hits:0});
+  }
+  save(); closeMod(); renderSrc(); toast('Saved');
+}
+function delSource(id){ S.sources = S.sources.filter(s => s.id !== id); save(); closeMod(); renderSrc(); toast('Removed'); }
+document.addEventListener('input', e => {
+  if(e.target && e.target.id === 's-q'){ sQuery = e.target.value; renderSrc(); }
+});
+
+/* ---------- CAPTURES ---------- */
+function openCapture(){
+  $('#sheet').innerHTML = '<h3>Capture</h3>'
+    + '<div class="hh">Whatever just arrived. Write it down and go back to what you were doing. It is not a task and nothing will chase you about it.</div>'
+    + '<textarea class="inp" id="capIn" placeholder="the thing" style="min-height:120px"></textarea>'
+    + '<div class="row"><button class="btn gold" onclick="saveCap()">Keep it</button><button class="btn" onclick="closeMod()">Cancel</button></div>';
+  $('#mod').classList.add('on');
+  setTimeout(()=>{ const el = $('#capIn'); if(el) el.focus(); }, 90);
+}
+function saveCap(){
+  const v = ($('#capIn').value||'').trim();
+  if(!v){ closeMod(); return; }
+  S.captures.unshift({t:Date.now(), text:v});
+  save(); closeMod(); toast('Kept'); renderArc();
+}
+function closeMod(){ if(tLock) return; $('#mod').classList.remove('on'); }
+function renderArc(){
+  const list = $('#a-list');
+  if(!S.captures.length){
+    list.innerHTML = '<div class="card"><div class="h" style="margin:0">Nothing captured yet. The + button, any time.</div></div>';
+    return;
+  }
+  list.innerHTML = S.captures.slice(0,80).map((c,i) =>
+    '<div class="cap"><div class="tx">' + esc(c.text) + '</div><div class="mt">'
+    + new Date(c.t).toLocaleDateString([], {day:'numeric', month:'short'}) + ' · '
+    + new Date(c.t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    + ' &nbsp;&middot;&nbsp; <button onclick="delCap(' + i + ')" style="color:var(--faint);text-decoration:underline">discard</button></div></div>'
+  ).join('');
+}
+function delCap(i){ S.captures.splice(i,1); save(); renderArc(); }
+
+/* ---------- data ---------- */
+function doExport(){
+  const blob = new Blob([JSON.stringify(S,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'compass-' + todayKey() + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('Exported');
+}
+function doImport(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const p = JSON.parse(r.result);
+      if(!p || typeof p !== 'object' || !p.days) throw new Error('bad file');
+      S = Object.assign(blankState(), p);
+      S.cfg = Object.assign(blankState().cfg, p.cfg||{});
+      S.cfg.hz = Object.assign({}, DEFAULT_HZ, (p.cfg&&p.cfg.hz)||{});
+      save(); renderAll(); toast('Imported');
+    }catch(e){ toast('Could not read that file'); }
+  };
+  r.readAsText(f);
+  ev.target.value = '';
+}
+
+/* ---------- first run ---------- */
+function firstRun(){
+  $('#sheet').innerHTML = '<h3>Once</h3>'
+    + '<div class="hh">Four things, then the app locks its own settings. After this, compasses change only inside the monthly and yearly reviews — not on a Tuesday.</div>'
+    + '<input class="inp" id="s-a" placeholder="primary discipline (e.g. writing)">'
+    + '<input class="inp" id="s-b" placeholder="second — in service of the first (e.g. directing)">'
+    + '<input class="inp" id="s-c" placeholder="third">'
+    + '<input class="inp" id="s-p" placeholder="the one active project">'
+    + '<div class="row"><button class="btn gold" onclick="finishSetup()">Begin</button></div>'
+    + '<div class="mini">All of it lives on this device. Export from Captures to back it up.</div>';
+  $('#mod').classList.add('on');
+}
+function finishSetup(){
+  S.cfg.discA = ($('#s-a').value||'').trim() || 'Writing';
+  S.cfg.discB = ($('#s-b').value||'').trim() || 'Directing';
+  S.cfg.discC = ($('#s-c').value||'').trim() || 'Third';
+  S.cfg.project = ($('#s-p').value||'').trim();
+  S.cfg.setup = true;
+  save(); closeMod(); renderAll();
+}
+
+/* ---------- nav ---------- */
+function go(v){
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('on'));
+  $('#v-' + v).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  window.scrollTo(0,0);
+  renderAll();
+}
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.v)));
+
+function renderAll(){
+  try{ renderToday(); renderLog(); renderGround(); renderSrc(); renderHz(); renderRev(); renderArc(); }
+  catch(e){ console.error('render error', e); }
+}
+
+/* boot */
+renderAll();
+if(!S.cfg.setup) firstRun();
+// day rollover while the app sits open on the home screen
+let bootDay = todayKey();
+setInterval(() => { if(todayKey() !== bootDay){ bootDay = todayKey(); renderAll(); } }, 60000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) renderAll(); });
+</script>
+</body>
+</html>
