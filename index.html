@@ -169,6 +169,32 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.55}
 .clock .a{font-family:var(--serif);font-size:19px;line-height:1.45;margin:18px 0 4px}
 .clock .s{font-size:12px;color:var(--faint);letter-spacing:1.4px;text-transform:uppercase}
 
+/* aerial — not a grid */
+.next{background:var(--panel);border:1px solid rgba(201,164,76,.35);border-radius:15px;padding:18px 19px;margin-bottom:14px}
+.next .k{font-size:10.5px;letter-spacing:1.9px;text-transform:uppercase;color:var(--gold);margin-bottom:11px}
+.next .t{font-family:var(--serif);font-size:21px;line-height:1.3}
+.next .s{font-size:12.5px;color:var(--dim);margin-top:5px}
+.next .cd{font-family:var(--serif);font-size:36px;color:var(--gold);line-height:1;margin-top:14px}
+.next .cl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:6px}
+.daywrap{margin:18px 0 6px}
+.daybar{height:16px;border-radius:9px;background:rgba(201,164,76,.30);position:relative;overflow:hidden}
+.daybar .spent{position:absolute;left:0;top:0;bottom:0;background:var(--panel2)}
+.daybar .mark{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.55}
+.daylab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:7px;letter-spacing:.4px}
+.seq{margin-top:6px}
+.sq{display:flex;align-items:center;gap:13px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.sq:last-child{border-bottom:none}
+.sq .tm{flex:0 0 46px;font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+.sq .nm{flex:1;min-width:0}
+.sq .nm b{display:block;font-size:14.5px;font-weight:500}
+.sq .nm small{display:block;font-size:11.5px;color:var(--faint);margin-top:2px}
+.sq.past{opacity:.32}
+.sq.past .nm b{text-decoration:line-through}
+.sq.now .nm b{color:var(--gold)}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.chip{border:1px solid var(--line);border-radius:18px;padding:7px 12px;font-size:12.5px;color:var(--faint)}
+.chip.on{background:rgba(111,156,106,.12);border-color:rgba(111,156,106,.4);color:var(--green)}
+
 /* fab */
 .fab{position:fixed;right:18px;bottom:calc(90px + env(safe-area-inset-bottom));width:52px;height:52px;
   border-radius:50%;background:var(--gold);color:#171308;display:flex;align-items:center;justify-content:center;
@@ -181,7 +207,9 @@ nav{position:fixed;left:0;right:0;bottom:0;background:rgba(12,12,14,.94);
 nav button{flex:1;padding:11px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--faint)}
 nav button.on{color:var(--gold)}
 nav svg{width:21px;height:21px}
-nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
+nav span{font-size:8.5px;letter-spacing:.6px;text-transform:uppercase}
+nav button{padding-left:0;padding-right:0}
+nav svg{width:20px;height:20px}
 
 /* modal */
 .mod{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:flex-end;z-index:100}
@@ -208,7 +236,7 @@ nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
     <div class="n" id="t-chain">0</div>
     <div style="flex:1">
       <div class="lbl">Day chain</div>
-      <div class="note" id="t-chainnote">Consecutive days you wrote. Badly counts.</div>
+      <div class="note" id="t-chainnote">Days in a row you hit five pages.</div>
       <div class="dots" id="t-dots"></div>
     </div>
   </div>
@@ -216,21 +244,39 @@ nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
   <div class="sec">Expectation <span id="t-explock"></span></div>
   <div class="exp" id="t-expbox"></div>
 
+  <div id="t-fixed"></div>
+
   <div class="sec">The floor <span id="t-floorct"></span></div>
   <div class="floor" id="t-floor"></div>
 
-  <div class="mini">The floor is the whole verdict on a day. Everything else you do is recorded, not graded &mdash; it shows up on the 1st, not tonight.</div>
+  <div class="mini">Four floor items. Everything else goes on the Log tab and is reviewed on the 1st.</div>
   <div class="row"><button class="btn" onclick="go('arc')">Captures &amp; backup</button></div>
+</div></div>
+
+<!-- ============ AERIAL ============ -->
+<div class="view" id="v-day"><div class="wrap">
+  <div class="hd"><h1>Day</h1><div class="sub" id="d-left"></div></div>
+  <div class="datebar" id="d-date"></div>
+  <div id="d-next"></div>
+  <div class="daywrap">
+    <div class="daybar" id="d-bar"></div>
+    <div class="daylab" id="d-lab"></div>
+  </div>
+  <div class="sec">In order</div>
+  <div class="seq" id="d-seq"></div>
+  <div class="sec">Floor</div>
+  <div class="chips" id="d-floor"></div>
+  <div class="mini">Read-only. Times come from your recurring schedule and any one-offs; changing them happens in your calendar.</div>
 </div></div>
 
 <!-- ============ LOG ============ -->
 <div class="view" id="v-log"><div class="wrap">
-  <div class="hd"><h1>Log</h1><div class="sub">Ungraded</div></div>
+  <div class="hd"><h1>Log</h1><div class="sub">Not scored</div></div>
   <div class="datebar" id="l-date"></div>
 
   <div class="card">
-    <h3>Creative process</h3>
-    <div class="h">Daily compass #6. Hours, not output. Two disciplines, and the linking hours inside them.</div>
+    <h3>Creative hours</h3>
+    <div class="h">Hours by discipline, plus the hours spent linking.</div>
     <div id="l-hours"></div>
     <div style="margin-top:12px">
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint)">Today's hours went to</div>
@@ -241,23 +287,23 @@ nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
 
   <div class="card">
     <h3>Community building</h3>
-    <div class="h">Daily compass #7. Time, in hours.</div>
+    <div class="h">Hours spent with people.</div>
     <div id="l-net"></div>
   </div>
 
   <div class="card">
-    <h3>Ambient</h3>
-    <div class="h">Compasses #2, #4, #5, #9, #10, #11. One tap if it happened. No streak, no penalty.</div>
+    <h3>Through the day</h3>
+    <div class="h">One tap if it happened. Not scored.</div>
     <div class="tog" id="l-amb"></div>
   </div>
 
-  <div class="mini">Nothing on this screen can fail. It exists so the monthly review has something true to read.</div>
+  <div class="mini">Not scored. Feeds the monthly review.</div>
 </div></div>
 
 <!-- ============ GROUND ============ -->
 <div class="view" id="v-gr"><div class="wrap">
-  <div class="hd"><h1>Ground</h1><div class="sub">Nothing is late</div></div>
-  <div class="datebar">Compass #9. Everything that eats attention by being unwritten.</div>
+  <div class="hd"><h1>Ground</h1><div class="sub">Standing + one-off</div></div>
+  <div class="datebar">Standing items and one-off tasks.</div>
   <div class="tabs" id="g-tabs"></div>
   <div id="g-start"></div>
   <div id="g-body"></div>
@@ -271,20 +317,20 @@ nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
 <!-- ============ SOURCES ============ -->
 <div class="view" id="v-src"><div class="wrap">
   <div class="hd"><h1>Sources</h1><div class="sub" id="s-count"></div></div>
-  <div class="datebar">Compasses #4, #5, #10 &mdash; news, magazines, art through the day.</div>
+  <div class="datebar">News, magazines, and art sources.</div>
   <input class="inp" id="s-q" placeholder="filter" autocomplete="off" style="margin:0 0 12px">
   <div id="s-rand"></div>
   <div id="s-list"></div>
   <div class="row" style="margin-top:18px"><button class="btn" onclick="editSource()">Add a source</button></div>
-  <div class="mini">Days since you last opened each one. Not a score &mdash; it is there so the same three don't absorb every visit.</div>
+  <div class="mini">Days since last opened.</div>
 </div></div>
 
 <!-- ============ HORIZON ============ -->
 <div class="view" id="v-hz"><div class="wrap">
   <div class="hd"><h1>Horizon</h1><div class="sub">Read only</div></div>
-  <div class="datebar">Daily compass #12 &mdash; satisfied by not holding it in your head.</div>
+  <div class="datebar">Read-only. Changes at the monthly and yearly reviews.</div>
   <div id="hz-body"></div>
-  <div class="ro">Editable only inside the monthly and yearly reviews.<br>If you want to change it now, that urge is the thing this screen exists to absorb.</div>
+  <div class="ro">Editable only inside the monthly and yearly reviews.</div>
 </div></div>
 
 <!-- ============ REVIEW ============ -->
@@ -315,6 +361,7 @@ nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
 
 <nav>
   <button data-v="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span>Today</span></button>
+  <button data-v="day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 8h12M6 14h12"/></svg><span>Day</span></button>
   <button data-v="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Log</span></button>
   <button data-v="gr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19h16"/><path d="M7 19V9M12 19V5M17 19v-6"/></svg><span>Ground</span></button>
   <button data-v="src"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5.5A2.5 2.5 0 016.5 3H11v18H6.5A2.5 2.5 0 014 18.5z"/><path d="M20 5.5A2.5 2.5 0 0017.5 3H13v18h4.5a2.5 2.5 0 002.5-2.5z"/></svg><span>Sources</span></button>
@@ -335,46 +382,55 @@ nav span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase}
    - Compasses are editable only inside a review window.
    ============================================================ */
 
-const KEY = 'compass.v1';
-const FLOOR = [
-  {id:'write',  t:'Wrote badly',        d:'One session at the file. Not good, not finished — at it. Compass #6, keystone.'},
-  {id:'read',   t:'Read 15 pages',      d:'Compass #3.'},
-  {id:'direct', t:'Directing: one person, one step', d:'Spoke to someone about the work AND moved one concrete thing forward. Both, or it is not done.'},
-  {id:'family', t:'Spoke with family',  d:'Compass #8.'}
+var KEY = 'compass.v1';
+var FLOOR = [
+  {id:'write',  t:'Wrote five pages',   d:'Five pages minimum.'},
+  {id:'read',   t:'Read fifteen pages', d:'Book, magazine, or article.'},
+  {id:'direct', t:'Directing: one person, one step', d:'Talked to someone about the work and moved one thing forward. Both required.'},
+  {id:'family', t:'Spoke with family',  d:'Call or message.'}
 ];
-const AMBIENT = [
+var AMBIENT = [
   {id:'dress', t:'Dressed well'},
-  {id:'news',  t:'News cycle'},
+  {id:'news',  t:'News'},
   {id:'mag',   t:'Magazines'},
-  {id:'art',   t:'Art / literature'},
-  {id:'errand',t:'Errands window'},
-  {id:'social',t:'Social window'}
+  {id:'art',   t:'Art or literature'},
+  {id:'errand',t:'Errands'},
+  {id:'social',t:'Social'}
 ];
 
 /* Ground: standing items. Cadence, not due dates — nothing is ever overdue,
    so the list stays openable. Each carries a next physical action, because
    "sort the visa" does not initiate and "find the passport number" does. */
-const ZONES = [
-  {id:'out',   t:'Out of the house'},
-  {id:'home',  t:'At home'},
-  {id:'admin', t:'Desk / phone'}
+var ZONES = [
+  {id:'body',   t:'Body'},
+  {id:'home',   t:'Home'},
+  {id:'admin',  t:'Admin'},
+  {id:'work',   t:'Work'},
+  {id:'people', t:'People'}
 ];
-const SEED_GROUND = [
+var SEED_GROUND = [
   {name:'Laundry',            zone:'home',  days:7,   next:'Sort the dark pile and start the machine'},
   {name:'Sheets',             zone:'home',  days:14,  next:'Strip the bed'},
-  {name:'Groceries',          zone:'out',   days:5,   next:'Open notes, write the six things'},
+  {name:'Groceries',          zone:'home',   days:5,   next:'Open notes, write the six things'},
   {name:'Tidy the desk',      zone:'home',  days:7,   next:'Clear everything off it, put back only what you use'},
-  {name:'Haircut',            zone:'out',   days:35,  next:'Text the barber for a slot'},
-  {name:'Dentist',            zone:'out',   days:180, next:'Call and book'},
-  {name:'Doctor / check-up',  zone:'out',   days:365, next:'Call and book'},
+  {name:'Haircut',            zone:'body',   days:35,  next:'Text the barber for a slot'},
+  {name:'Dentist',            zone:'body',   days:180, next:'Call and book'},
+  {name:'Doctor / check-up',  zone:'body',   days:365, next:'Call and book'},
   {name:'Visa paperwork',     zone:'admin', days:21,  next:'Open the folder and read the next required document'},
   {name:'Bins out',           zone:'home',  days:7,   next:'Take the bag down'},
-  {name:'Pay / file receipts',zone:'admin', days:30,  next:'Open banking, screenshot anything unfiled'}
+  {name:'Pay / file receipts',zone:'admin', days:30,  next:'Open banking, screenshot anything unfiled'},
+  {name:'Cleaner',            zone:'home', days:14,  next:'Book a replacement on Helpling — Alex cancelled all future bookings'},
+  {name:'Student loans — recertify', zone:'admin', days:365, next:'Log in and recertify'},
+  {name:'Back up pages to the drive folder', zone:'work', days:7, next:'Drag this week’s pages into the folder'},
+  {name:'Watch one film',     zone:'work',  days:7,   next:'Pick it now and put it on'},
+  {name:'Follow up with community connections', zone:'people', days:7, next:'Open the list, message the oldest name on it'},
+  {name:'Meet someone from another discipline', zone:'people', days:30, next:'Message one person to arrange a coffee'},
+  {name:'Housing search',     zone:'admin', days:7,   next:'Open WG-Gesucht, send one message'}
 ];
 
 /* Sources. Groups in his own order. URLs he supplied are kept verbatim;
    ones marked mine were filled in and spot-checked. */
-const SGROUPS = [
+var SGROUPS = [
   {id:'top',     t:'Top three'},
   {id:'read',    t:'Reading'},
   {id:'licence', t:'Need a licence'},
@@ -382,7 +438,7 @@ const SGROUPS = [
   {id:'buy',     t:'Sales &amp; prints'},
   {id:'open',    t:'Unresolved'}
 ];
-const SEED_SOURCES = [
+var SEED_SOURCES = [
   ['Frieze','https://www.frieze.com','top',''],
   ['Hyperallergic','https://hyperallergic.com','top',''],
   ['Aperture','https://aperture.org','top','hosts talks with the artists'],
@@ -438,7 +494,29 @@ const SEED_SOURCES = [
   ['mi…','','open','the line was cut off']
 ];
 
-const DEFAULT_HZ = {
+/* The recurring skeleton. Taken from the calendar he already runs, so the app
+   and the phone say the same thing. The app owns the rhythm and hands it to
+   the calendar — the calendar owns the alarms, because a web app cannot ring. */
+var RITUALS = [
+  {id:'deliver', t:'Delivery — send one finished thing', days:[5], time:'18:00', mins:30,
+   rrule:'FREQ=WEEKLY;BYDAY=FR', note:'One finished thing, sent to two or three people.'},
+  {id:'weekly',  t:'Weekly review + horizon', days:[0], time:'19:00', mins:15,
+   rrule:'FREQ=WEEKLY;BYDAY=SU', note:'Next week, the love day, the horizon.'},
+  {id:'family',  t:'Family call — California lunch', days:[0,3], time:'21:30', mins:30,
+   rrule:'FREQ=WEEKLY;BYDAY=SU,WE', note:'California lunchtime. Sister first.'},
+  {id:'monthly', t:'Monthly review — the ledger', days:[], time:'19:00', mins:45,
+   rrule:'FREQ=MONTHLY;BYDAY=-1SU', note:'Month ledger and two months ahead.',
+   lastSunday:true}
+];
+function ritualsOn(d){
+  const dow = d.getDay();
+  const dim = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  const isLastSun = dow === 0 && d.getDate() + 7 > dim;
+  return RITUALS.filter(r => r.lastSunday ? isLastSun : r.days.indexOf(dow) > -1)
+                .sort((a,b) => a.time < b.time ? -1 : 1);
+}
+
+var DEFAULT_HZ = {
   four:  "An audience large enough to be an argument — trusted with a feature partly on the strength of who already turns up.\nA first feature, paid.\nFour years — finished and submitted by 35.",
   route: "Written over four years: ~20 short scripts, 2 features.\nDirected: ~10 shorts, 1 feature.\nRoughly two written per one shot.\nMonthly shoot day. Feature shoots at 34 — script and proof of concept ahead of it.\nShoot from the backlog. Material was never the bottleneck.",
   travel:"Three consecutive months somewhere new, every two years.\nA different country every ten years — under consideration, not decided.",
@@ -457,6 +535,7 @@ function blankState(){
             name:g.name, zone:g.zone, days:g.days, next:g.next, when:'', last:null, hist:[]
           })),
           stuck: [],
+          events: [],
           releases: [],
           sources: SEED_SOURCES.map((s,i) => ({
             id:'src'+i, name:s[0], url:s[1], group:s[2], note:s[3], last:null, hits:0
@@ -475,6 +554,7 @@ function load(){
     if(!Array.isArray(r.ground)) r.ground = blankState().ground;
     if(!Array.isArray(r.stuck)) r.stuck = [];
     if(!Array.isArray(r.releases)) r.releases = [];
+    if(!Array.isArray(r.events)) r.events = [];
     if(!Array.isArray(r.sources) || !r.sources.length) r.sources = blankState().sources;
     if(!Array.isArray(r.captures)) r.captures = [];
     return r;
@@ -508,7 +588,12 @@ function day(k){
   d.hrs = Object.assign({a:0,b:0,c:0,link:0,net:0}, d.hrs||{});
   return d;
 }
-function week(k){ k=k||weekKey(new Date()); if(!S.weeks[k]) S.weeks[k]={love:false,note:'',sched:'',done:false}; return S.weeks[k]; }
+function week(k){
+  k = k || weekKey(new Date());
+  if(!S.weeks[k]) S.weeks[k] = {love:false, delivery:false, note:'', sched:'', done:false};
+  if(S.weeks[k].delivery === undefined) S.weeks[k].delivery = false;
+  return S.weeks[k];
+}
 function month(k){ k=k||monthKey(new Date()); if(!S.months[k]) S.months[k]={note:'',project:'',done:false}; return S.months[k]; }
 function year(k){
   k = k || String(new Date().getFullYear());
@@ -530,9 +615,11 @@ function lastAudience(){
 function locks(now){
   now = now || new Date();
   const dow = now.getDay(), dom = now.getDate(), mo = now.getMonth();
+  const dim = new Date(now.getFullYear(), mo + 1, 0).getDate();
+  const lastSunday = dow === 0 && dom + 7 > dim;        // matches the calendar's monthly slot
   return {
-    week:  dow === 0,                                   // Sunday
-    month: dom <= 3,                                    // 1st–3rd
+    week:  dow === 0,                                   // Sunday 19:00, per the calendar
+    month: dom <= 3 || lastSunday,                      // 1st–3rd, or the last Sunday
     year:  (mo === 11 && dom >= 28) || (mo === 0 && dom <= 7)
   };
 }
@@ -578,7 +665,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let toastT;
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),1900); }
-const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#0d130c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg>';
+var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#0d130c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg>';
 
 /* ---------- TODAY ---------- */
 function renderToday(){
@@ -587,10 +674,15 @@ function renderToday(){
   $('#t-date').textContent = longDate(now);
 
   const c = chain();
+  const mk = monthKey(now);
+  const monthWrite = Object.keys(S.days).filter(x => x.slice(0,7) === mk && S.days[x].floor && S.days[x].floor.write).length;
   $('#t-chain').textContent = c;
-  $('#t-chainnote').textContent = c === 0
-    ? 'No chain. It starts tonight with one bad sentence.'
-    : (c === 1 ? 'One day. The next one is the same move.' : c + ' days of writing badly, unbroken.');
+  // the month total sits beside the chain on purpose: a broken chain does not
+  // erase the month, so breaking it is a fact rather than a catastrophe
+  $('#t-chainnote').textContent = (c === 0
+    ? 'No chain yet — five pages starts it.'
+    : c + (c === 1 ? ' day' : ' days') + ' in a row at five pages.')
+    + '  ·  ' + monthWrite + ' day' + (monthWrite === 1 ? '' : 's') + ' this month, chain or no chain.';
 
   // last 14 days
   let dots = '';
@@ -607,11 +699,25 @@ function renderToday(){
     eb.innerHTML = '<div class="set">'+esc(d.exp)+'</div><div class="meta">Set at '+esc(d.expAt)+'. Locked until tomorrow.</div>';
     $('#t-explock').textContent = 'locked';
   }else{
-    eb.innerHTML = '<textarea id="expIn" placeholder="What today is going to look like. One line."></textarea>'
+    eb.innerHTML = '<textarea id="expIn" placeholder="What today looks like. One line."></textarea>'
       + '<div class="row"><button class="btn gold" onclick="setExp()">Set for the day</button></div>'
-      + '<div class="meta">Compass #1. Once set it cannot be edited &mdash; the plan is not the work.</div>';
+      + '<div class="meta">Cannot be edited once set.</div>';
     $('#t-explock').textContent = '';
   }
+
+  // fixed points today: the recurring skeleton plus anything one-off
+  const rt = ritualsOn(now).map(r => ({t:r.t, note:r.note, time:r.time, id:null}));
+  const ev = eventsOn(k).map(e => ({t:e.title, note:e.who || e.note || '', time:e.time, id:e.id}));
+  const fixed = rt.concat(ev).sort((a,b) => a.time < b.time ? -1 : 1);
+  $('#t-fixed').innerHTML = '<div class="sec">Fixed today <span style="color:var(--faint)">'
+    + (fixed.length ? fixed.length : '') + '</span></div>'
+    + (fixed.length ? fixed.map(f =>
+        '<' + (f.id ? 'button' : 'div') + ' class="g"' + (f.id ? ' onclick="openEvent(\'' + f.id + '\')"' : ' style="cursor:default"') + '>'
+        + '<div class="pip ripe"></div>'
+        + '<div class="nm"><b>' + esc(f.t) + '</b><small>' + esc(f.note) + '</small></div>'
+        + '<div class="ago"><b>' + esc(f.time) + '</b></div></' + (f.id ? 'button' : 'div') + '>').join('')
+      : '<div class="card"><div class="h" style="margin:0">Nothing fixed today.</div></div>')
+    + '<div class="row"><button class="btn" onclick="editEvent()">Add a one-off</button></div>';
 
   // floor
   const doneN = FLOOR.filter(f => d.floor[f.id]).length;
@@ -634,6 +740,135 @@ function toggleFloor(id){
   if(id === 'write' && d.floor.write) toast('Chain: ' + chain());
 }
 
+/* ---------- ONE-OFF EVENTS ----------
+   Typed here, pushed to the calendar for the alarm. The app holds the record;
+   the phone does the ringing. */
+function eventsOn(k){
+  return S.events.filter(e => e.date === k).sort((a,b) => a.time < b.time ? -1 : 1);
+}
+function upcomingEvents(days){
+  const from = todayKey(), to = keyOf(addDays(new Date(), days || 7));
+  return S.events.filter(e => e.date >= from && e.date <= to)
+                 .sort((a,b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1);
+}
+/* next half hour, so a thing that just came up lands somewhere sensible */
+function nextHalfHour(){
+  const n = new Date();
+  let m = n.getMinutes() <= 30 ? 30 : 60;
+  const d = new Date(n.getFullYear(), n.getMonth(), n.getDate(), n.getHours(), 0, 0);
+  d.setMinutes(m);
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function editEvent(id, prefill){
+  const e = id ? S.events.filter(x => x.id === id)[0] : null;
+  $('#sheet').innerHTML = '<h3>' + (e ? 'One-off' : 'Give it a time') + '</h3>'
+    + '<div class="hh">Something with a time attached — a meeting, a call, an appointment. '
+    + 'Put it in your calendar too; that is the part that alerts you.</div>'
+    + '<input class="inp" id="ev-t" value="' + esc(e ? e.title : (prefill || '')) + '" placeholder="what it is">'
+    + '<input class="inp" id="ev-d" type="date" value="' + esc(e ? e.date : todayKey()) + '">'
+    + '<input class="inp" id="ev-tm" type="time" value="' + esc(e ? e.time : nextHalfHour()) + '">'
+    + '<input class="inp" id="ev-w" value="' + esc(e ? (e.who||'') : '') + '" placeholder="who (optional)">'
+    + '<div class="row" style="margin-top:16px"><button class="btn gold" style="flex:1;padding:13px" onclick="saveEvent(' + (e ? "'"+e.id+"'" : 'null') + ')">Save</button>'
+    + (e ? '<button class="btn" onclick="eventICS(\'' + e.id + '\')">Put in calendar</button>' : '')
+    + '</div>'
+    + (e ? '<div class="row"><button class="btn" onclick="closeMod()">Close</button>'
+         + '<button class="btn" style="color:var(--red)" onclick="delEvent(\'' + e.id + '\')">Delete</button></div>'
+         : '<div class="row"><button class="btn" onclick="closeMod()">Cancel</button></div>');
+  $('#mod').classList.add('on');
+}
+function openEvent(id){ editEvent(id); }
+function saveEvent(id){
+  const t = ($('#ev-t').value||'').trim();
+  if(!t){ toast('Needs a name'); return; }
+  const rec = {title:t, date:$('#ev-d').value || todayKey(), time:$('#ev-tm').value || '09:00',
+               who:($('#ev-w').value||'').trim(), note:''};
+  if(id){ Object.assign(S.events.filter(x => x.id === id)[0] || {}, rec); }
+  else { S.events.push(Object.assign({id:'e' + Date.now().toString(36)}, rec)); }
+  save(); closeMod(); renderAll(); toast('Saved');
+}
+function delEvent(id){ S.events = S.events.filter(e => e.id !== id); save(); closeMod(); renderAll(); toast('Removed'); }
+function eventICS(id){
+  const e = S.events.filter(x => x.id === id)[0]; if(!e) return;
+  const dp = e.date.split('-'), tp = e.time.split(':');
+  const start = new Date(+dp[0], +dp[1]-1, +dp[2], +tp[0], +tp[1], 0);
+  const end = new Date(start.getTime() + 60*60000);
+  icsDownload(['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Compass//Event//EN',
+    'BEGIN:VEVENT','UID:' + e.id + '@compass.local','DTSTAMP:' + icsStamp(new Date()),
+    'DTSTART:' + icsStamp(start),'DTEND:' + icsStamp(end),
+    'SUMMARY:' + icsEsc(e.title),'DESCRIPTION:' + icsEsc(e.who || ''),
+    'BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:' + icsEsc(e.title),'END:VALARM',
+    'END:VEVENT','END:VCALENDAR'],
+    e.title.replace(/[^\w\- ]+/g,'').slice(0,40).trim().replace(/\s+/g,'-') + '.ics');
+  closeMod(); toast('Open it to add');
+}
+
+/* ---------- AERIAL ----------
+   The day as a shape rather than a list. Read-only on purpose: a grid you can
+   rearrange is a planning surface, and planning is not what this is for. */
+var DAY_START = 6, DAY_END = 24, HR_PX = 34;
+function hhmmToMin(t){ const p = String(t||'0:00').split(':'); return (+p[0])*60 + (+p[1]); }
+function minToTop(m){ return ((m - DAY_START*60) / 60) * HR_PX; }
+
+function dayBlocks(k, d){
+  const out = [];
+  ritualsOn(d).forEach(r => out.push({t:r.t, sub:r.note, time:r.time, mins:r.mins, ev:false}));
+  eventsOn(k).forEach(e => out.push({t:e.title, sub:e.who || '', time:e.time, mins:60, ev:true}));
+  return out.sort((a,b) => hhmmToMin(a.time) - hhmmToMin(b.time));
+}
+
+function renderDay(){
+  const now = new Date(), k = todayKey(), d = day(k);
+  $('#d-date').textContent = longDate(now);
+
+  const mins = now.getHours()*60 + now.getMinutes();
+  const blocks = dayBlocks(k, now);
+  const upcoming = blocks.filter(b => hhmmToMin(b.time) > mins);
+  const nextUp = upcoming[0];
+
+  // the one thing worth opening the app for
+  if(nextUp){
+    const gap = hhmmToMin(nextUp.time) - mins;
+    $('#d-next').innerHTML = '<div class="next"><div class="k">Next</div>'
+      + '<div class="t">' + esc(nextUp.t) + '</div>'
+      + (nextUp.sub ? '<div class="s">' + esc(nextUp.sub) + '</div>' : '')
+      + '<div class="cd">' + (gap >= 60 ? Math.floor(gap/60) + 'h ' + pad(gap%60) : gap + ' min') + '</div>'
+      + '<div class="cl">until ' + esc(nextUp.time) + '</div></div>';
+  }else{
+    $('#d-next').innerHTML = '<div class="next"><div class="k">Next</div>'
+      + '<div class="t">Nothing else fixed today.</div>'
+      + '<div class="s">The rest of the day is yours.</div></div>';
+  }
+
+  // how much day is left, as a length rather than a number
+  const startM = DAY_START*60, endM = DAY_END*60;
+  const pct = Math.max(0, Math.min(100, ((mins - startM) / (endM - startM)) * 100));
+  let bar = '<div class="spent" style="width:' + pct.toFixed(1) + '%"></div>';
+  blocks.forEach(b => {
+    const m = hhmmToMin(b.time);
+    if(m < startM || m > endM) return;
+    bar += '<div class="mark" style="left:' + (((m - startM)/(endM - startM))*100).toFixed(1) + '%"></div>';
+  });
+  $('#d-bar').innerHTML = bar;
+  const leftMin = Math.max(0, endM - mins);
+  $('#d-left').textContent = Math.floor(leftMin/60) + 'h ' + pad(leftMin%60) + ' left';
+  $('#d-lab').innerHTML = '<span>' + (mins < startM ? 'not started' : Math.floor(pct) + '% gone') + '</span>'
+    + '<span>' + Math.floor(leftMin/60) + 'h ' + pad(leftMin%60) + ' left</span>';
+
+  // the day in order, not on a grid
+  $('#d-seq').innerHTML = blocks.length
+    ? blocks.map(b => {
+        const m = hhmmToMin(b.time);
+        const cls = m + b.mins <= mins ? 'past' : (nextUp && b.time === nextUp.time ? 'now' : '');
+        return '<div class="sq ' + cls + '"><div class="tm">' + esc(b.time) + '</div>'
+          + '<div class="nm"><b>' + esc(b.t) + '</b>'
+          + (b.sub ? '<small>' + esc(b.sub) + '</small>' : '') + '</div></div>';
+      }).join('')
+    : '<div class="mini" style="margin:0">Nothing fixed today.</div>';
+
+  $('#d-floor').innerHTML = FLOOR.map(f =>
+    '<div class="chip' + (d.floor[f.id] ? ' on' : '') + '">' + esc(f.t) + '</div>').join('');
+}
+
 /* ---------- LOG ---------- */
 function stepper(val, onm, onp){
   return '<div class="stepper"><button onclick="'+onm+'">&minus;</button>'
@@ -641,19 +876,19 @@ function stepper(val, onm, onp){
 }
 function renderLog(){
   const d = day();
-  $('#l-date').textContent = longDate(new Date()) + ' — nothing here is scored';
+  $('#l-date').textContent = longDate(new Date()) + ' — not scored';
 
   const A = S.cfg.discA || 'Writing', B = S.cfg.discB || 'Directing', C = S.cfg.discC || 'Third';
   const tot = (d.hrs.a + d.hrs.b + d.hrs.c);
   $('#l-hours').innerHTML =
-      row(A, 'the one the others feed', d.hrs.a, 'a')
-    + row(B, 'in service of the above', d.hrs.b, 'b')
-    + row(C, 'the third', d.hrs.c, 'c')
-    + row('Linking', 'of the hours above &mdash; including linking what you read and saw', d.hrs.link, 'link')
+      row(A, 'hours', d.hrs.a, 'a')
+    + row(B, 'hours', d.hrs.b, 'b')
+    + row(C, 'hours', d.hrs.c, 'c')
+    + row('Linking', 'of the hours above', d.hrs.link, 'link')
     + '<div class="mini">'+tot.toFixed(1)+' h total, '+d.hrs.link.toFixed(1)+' h linking. '
-    + (tot >= 10 ? 'Compass #6 met.' : 'Compass #6 asks 10. This is a dial, not a verdict.') + '</div>';
+    + (tot >= 10 ? 'Target of 10 met.' : 'Target is 10. Not scored.') + '</div>';
 
-  $('#l-net').innerHTML = row('Community', 'compass #7 &mdash; hours given to people', d.hrs.net, 'net');
+  $('#l-net').innerHTML = row('Community', 'hours', d.hrs.net, 'net');
 
   $('#l-project').value = d.project || S.cfg.project || '';
   const ap = S.cfg.project;
@@ -706,6 +941,21 @@ function renderHz(){
   out += box('Love day', w.love ? 'Taken this week.' : 'Not yet taken. Compass: one day a week given to art, romance, or nature.', true);
   out += box('Travel', h.travel, true);
   out += box('Home', h.home, true);
+  // the recurring week, computed — no connection needed
+  const wkShape = [0,1,2,3,4,5,6].map(i => {
+    const dd = addDays(now, i);
+    const rr = ritualsOn(dd);
+    if(!rr.length) return null;
+    return DAYN[dd.getDay()].slice(0,3) + '  ' + rr.map(r => r.time + '  ' + r.t.split(' — ')[0]).join('\n     ');
+  }).filter(Boolean).join('\n');
+  const oneOffs = upcomingEvents(7).map(e =>
+    DAYN[new Date(+e.date.split('-')[0], +e.date.split('-')[1]-1, +e.date.split('-')[2]).getDay()].slice(0,3)
+    + '  ' + e.time + '  ' + e.title + (e.who ? ' — ' + e.who : '')).join('\n');
+  out += '<div class="hz"><div class="k">The next seven days</div><div class="b d" style="white-space:pre-wrap">'
+    + esc([wkShape, oneOffs].filter(Boolean).join('\n') || 'Nothing fixed this week.') + '</div>'
+    + '<div class="row"><button class="btn gold" onclick="exportRituals()">Put this rhythm in your iPhone calendar</button></div>'
+    + '<div class="mini">One file with all recurring events and alarms.</div></div>';
+
   out += '<div class="hz"><div class="k">Next review</div><div class="b d">Sunday review opens in '
        + daysUntil(nextSun) + ' day' + (daysUntil(nextSun)===1?'':'s') + '.<br>Monthly review opens on the 1st.</div></div>';
   $('#hz-body').innerHTML = out;
@@ -746,8 +996,7 @@ function lockScreen(){
     + '<h2>Nothing to review today</h2>'
     + '<p>Weekly opens Sunday. Monthly opens the 1st through the 3rd. Yearly opens 28 December through 7 January.</p>'
     + '<div class="cd">'+n+'</div><div class="cdl">day'+(n===1?'':'s')+' until the '+kind.toLowerCase()+' review</div>'
-    + '<p style="margin-top:26px;font-size:12.5px;color:var(--faint)">Reviewing the plan is not working on the film. '
-    + 'The lock is the feature, not the limitation.</p></div>';
+    + '<p style="margin-top:26px;font-size:12.5px;color:var(--faint)">Reviews open on their days only.</p></div>';
 }
 
 function weekForm(){
@@ -757,7 +1006,10 @@ function weekForm(){
     + st(stats.write + '/7', 'days written') + st(stats.full + '/7', 'full floor days')
     + st(stats.hours.toFixed(0) + 'h', 'creative hours') + st(stats.link.toFixed(0) + 'h', 'linking hours')
     + '</div>'
-    + '<div class="card"><h3>Love day</h3><div class="h">Weekly compass #1 &mdash; a day given to art, romance, or nature.</div>'
+    + '<div class="card"><h3>Delivery</h3><div class="h">Friday 18:00. One finished thing sent to two or three people.</div>'
+    + '<div class="tog"><button class="tg' + (w.delivery?' on':'') + '" onclick="wDeliver()">'
+    + (w.delivery?'Sent this week':'Not sent') + '</button></div></div>'
+    + '<div class="card"><h3>Love day</h3><div class="h">One day a week given to art, someone, or being outside.</div>'
     + '<div class="tog"><button class="tg'+(w.love?' on':'')+'" onclick="wLove()">'+(w.love?'Taken this week':'Not taken')+'</button></div></div>'
     + '<div class="card"><h3>Schedule</h3><div class="h">Weekly compass #2. Changes to the coming week &mdash; write them once, here, and then stop.</div>'
     + '<textarea class="inp" id="w-sched" placeholder="What next week actually looks like.">'+esc(w.sched)+'</textarea></div>'
@@ -765,6 +1017,10 @@ function weekForm(){
     + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveWeek()">Close the week</button>';
 }
 function wLove(){ const w = week(); w.love = !w.love; save(); renderRev(); }
+function wDeliver(){
+  const w = week(); w.delivery = !w.delivery; save(); renderRev();
+  if(w.delivery) toast('Delivery logged');
+}
 function saveWeek(){
   const w = week();
   w.sched = $('#w-sched').value; w.note = $('#w-note').value; w.done = true;
@@ -785,12 +1041,11 @@ function monthForm(){
   let frag = '';
   if(s.projects.length > 2){
     frag = '<div class="flag"><b>' + s.projects.length + ' different projects took creative hours in '
-      + MON[prev.getMonth()] + '.</b><br>Reps only compound when they hit the same target. '
-      + s.projects.length + ' projects is ' + s.projects.length + ' first attempts, not ' + s.projects.length + ' reps.<br>'
+      + MON[prev.getMonth()] + '.</b><br>Hours split across ' + s.projects.length + ' projects rather than concentrated on one.<br>'
       + '<span style="color:var(--dim);font-size:12px">' + esc(s.projects.join(' · ')) + '</span></div>';
   }else if(s.projects.length){
     frag = '<div class="card"><div class="h" style="margin:0">Hours went to: <span style="color:var(--gold)">'
-      + esc(s.projects.join(' · ')) + '</span>. Concentrated. That is how reps stack.</div></div>';
+      + esc(s.projects.join(' · ')) + '</span>.</div></div>';
   }
 
   return '<div class="card"><div class="h" style="margin:0">Reviewing <b style="color:var(--ink)">'
@@ -803,7 +1058,7 @@ function monthForm(){
     + '</div>' + frag
     + releaseCard(prev)
     + '<div class="card"><h3>Active project for ' + MON[now.getMonth()] + '</h3>'
-    + '<div class="h">One. Changing it is allowed &mdash; here, once a month, deliberately. Not on a Tuesday because a new idea arrived.</div>'
+    + '<div class="h">One project. Changed here, once a month.</div>'
     + '<input class="inp" id="m-proj" value="' + esc(S.cfg.project) + '" placeholder="the one thing"></div>'
     + '<div class="card"><h3>The month ahead</h3><div class="h">Monthly compass &mdash; what is coming, and anything to add. This becomes the Horizon.</div>'
     + '<textarea class="inp" id="m-hz" placeholder="Shape of the month.">' + esc(S.cfg.hz.month) + '</textarea></div>'
@@ -830,10 +1085,10 @@ function releaseCard(prev){
       + (r.note ? ' &middot; ' + esc(r.note) : '') + '</small></div>'
       + '<button class="sz" onclick="delRelease(\'' + r.id + '\')">remove</button></div>').join('');
   }else{
-    list = '<div class="mini" style="margin:0">Nothing yet. A month with none is information, not a verdict — but four in a row is the thing to notice.</div>';
+    list = '<div class="mini" style="margin:0">Nothing recorded this month.</div>';
   }
   return '<div class="card"><h3>Put out</h3>'
-    + '<div class="h">Hours do not make an audience. Finished things people see do — so this is the only number upstream of the four-year goal.</div>'
+    + '<div class="h">Finished work, and whether people saw it.</div>'
     + list
     + '<div class="row"><button class="btn gold" onclick="addRelease()">Add something</button></div></div>';
 }
@@ -857,7 +1112,8 @@ function yearForm(){
     + '<div class="stats">'
     + st(s.write, 'days written') + st(s.full, 'full floor days')
     + st(s.hours.toFixed(0) + 'h', 'creative hours') + st(s.link.toFixed(0) + 'h', 'linking hours &mdash; the maps')
-    + st(s.projects.length, 'distinct projects') + st(s.loveWeeks, 'love days taken')
+    + st(s.deliveries, 'deliveries sent') + st(s.loveWeeks, 'love days taken')
+    + st(s.projects.length, 'distinct projects') + st(s.read, 'days at fifteen pages')
     + '</div>'
     + (() => {
         const c = releaseCounts(yk + '-01-01', yk + '-12-31');
@@ -872,8 +1128,7 @@ function yearForm(){
       })()
     + '<div class="card"><h3>Artistic mastery</h3><textarea class="inp" id="y-1" placeholder="Progress, against the route. Evidence, not feeling.">' + esc(y.mastery) + '</textarea></div>'
     + '<div class="card"><h3>Audience</h3>'
-    + '<div class="h">Scale is part of the goal, so it gets counted rather than felt. One number you actually trust &mdash; '
-    + 'people who turn up for the work, however you choose to define that. Keep the definition the same every year or the curve means nothing.</div>'
+    + '<div class="h">One number, and what it counts. Keep the definition the same each year.</div>'
     + '<input class="inp" id="y-aud" type="number" min="0" value="' + (y.audN == null ? '' : y.audN) + '" placeholder="the number — 0 is a real answer">'
     + '<input class="inp" id="y-audnote" value="' + esc(y.audNote) + '" placeholder="what you counted — e.g. mailing list, or people who came to a screening">'
     + '</div>'
@@ -921,7 +1176,11 @@ function rangeStats(from, to){
     }
     d = addDays(d,1);
   }
-  for(const k in S.weeks){ if(S.weeks[k].love) r.loveWeeks++; }
+  for(const k in S.weeks){
+    if(S.weeks[k].love) r.loveWeeks++;
+    if(S.weeks[k].delivery) r.deliveries = (r.deliveries||0) + 1;
+  }
+  r.deliveries = r.deliveries || 0;
   return r;
 }
 
@@ -955,41 +1214,84 @@ function cadText(d){
   return d + 'd';
 }
 
-const SIZES = {s:'2 min', m:'20 min', l:'an hour+'};
+var SIZES = {s:'2 min', m:'20 min', l:'an hour+'};
 var gTab = 'stuck';
+
+/* Waiting: the next move belongs to someone else. Kept apart from Stuck so
+   it does not read as your backlog, and surfaced again once it has gone
+   quiet for CHASE_DAYS — at which point the move is yours again. */
+var CHASE_DAYS = 5;
+function isWaiting(s){ return !s.done && !!(s.who||'').trim(); }
+function silentDays(s){ const d = daysSince(s.since || s.added); return d === null ? 0 : d; }
 
 function renderGround(){
   const all = groundSorted();
   const ripe = all.filter(x => x.m.s === 'ripe').length;
-  const openStuck = S.stuck.filter(s => !s.done);
+  const openStuck = S.stuck.filter(s => !s.done && !isWaiting(s));
+  const waits = S.stuck.filter(isWaiting);
+  const silent = waits.filter(s => silentDays(s) >= CHASE_DAYS).length;
 
   $('#g-tabs').innerHTML =
       '<button class="tab' + (gTab==='stuck'?' on':'') + '" onclick="gTab=\'stuck\';renderGround()">Stuck · ' + openStuck.length + '</button>'
-    + '<button class="tab' + (gTab==='standing'?' on':'') + '" onclick="gTab=\'standing\';renderGround()">Standing · ' + ripe + ' ripe</button>';
+    + '<button class="tab' + (gTab==='waiting'?' on':'') + '" onclick="gTab=\'waiting\';renderGround()">Waiting · ' + waits.length + (silent ? ' (' + silent + ')' : '') + '</button>'
+    + '<button class="tab' + (gTab==='standing'?' on':'') + '" onclick="gTab=\'standing\';renderGround()">Standing · ' + ripe + '</button>';
 
   const pool = pickPool();
   $('#g-start').innerHTML = pool.length
-    ? '<button class="startone" onclick="startOne()">Start one &nbsp;&middot;&nbsp; it picks, you sit down</button>'
+    ? '<button class="startone" onclick="startOne()">Start one</button>'
       + '<div class="row" style="margin-bottom:14px"><button class="btn" style="flex:1" onclick="startOne(true,\'s\')">Just something small</button></div>'
     : '<div class="card"><div class="h" style="margin:0">Nothing waiting. Ground is clear.</div></div>';
 
-  $('#g-body').innerHTML = gTab === 'stuck' ? stuckList() : standingList(all);
+  $('#g-body').innerHTML = gTab === 'stuck' ? stuckList()
+                        : gTab === 'waiting' ? waitingList(waits)
+                        : standingList(all);
   $('#g-foot').textContent = gTab === 'stuck'
-    ? 'These are one-offs you already know about. The list is not the problem — knowing about them was never the missing piece. The timer is.'
-    : 'Items ripen, they do not go overdue. A haircut at seven weeks is ripe, not a failure — so the list stays something you are willing to open.';
+    ? 'One-off tasks, oldest first.'
+    : gTab === 'waiting'
+    ? 'The next move is theirs. After ' + CHASE_DAYS + ' days of silence it becomes yours again.'
+    : 'Items ripen rather than becoming overdue.';
 }
 
+function waitingList(waits){
+  if(!waits.length){
+    return '<div class="card"><div class="h" style="margin:0">Nobody owes you anything right now. '
+      + 'Open a Stuck item and fill in “Waiting on” once you have sent the ask.</div></div>';
+  }
+  const sorted = waits.slice().sort((a,b) => silentDays(b) - silentDays(a));
+  let out = '<div class="zone">Waiting &nbsp;·&nbsp; longest silence first</div>';
+  sorted.forEach(s => {
+    const d = silentDays(s);
+    const due = d >= CHASE_DAYS;
+    out += '<button class="g" onclick="openStuck(\'' + s.id + '\')">'
+      + '<div class="pip ' + (due ? 'ripe' : 'fresh') + '"></div>'
+      + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + esc(s.who)
+      + (due ? ' — chase them' : '') + '</small></div>'
+      + '<div class="ago"><b>' + (d === 0 ? 'today' : d + 'd') + '</b>silent</div></button>';
+  });
+  return out;
+}
+
+/* Collapsed by default, one open at a time. Seventeen rows on screen is
+   seventeen decisions; five is five. */
+var openDomain = null;
 function standingList(all){
   let out = '';
   ZONES.forEach(z => {
     const items = all.filter(x => x.g.zone === z.id);
     if(!items.length) return;
     const zr = items.filter(x => x.m.s === 'ripe').length;
-    out += '<div class="zone">' + z.t + (zr ? ' &nbsp;·&nbsp; ' + zr + ' ripe' : '') + '</div>';
+    const isOpen = openDomain === z.id;
+    out += '<button class="g" onclick="openDomain=' + (isOpen ? 'null' : "'" + z.id + "'") + ';renderGround()" '
+      + 'style="background:var(--panel2)">'
+      + '<div class="pip ' + (zr ? 'ripe' : 'fresh') + '"></div>'
+      + '<div class="nm"><b>' + z.t + '</b><small>' + items.length + ' item' + (items.length===1?'':'s')
+      + (zr ? ' · ' + zr + ' ripe' : '') + '</small></div>'
+      + '<div class="ago"><b>' + (isOpen ? '−' : '+') + '</b></div></button>';
+    if(!isOpen) return;
     items.forEach(x => {
-      out += '<button class="g" onclick="openGround(\'' + x.g.id + '\')">'
+      out += '<button class="g" style="margin-left:14px" onclick="openGround(\'' + x.g.id + '\')">'
         + '<div class="pip ' + x.m.s + '"></div>'
-        + '<div class="nm"><b>' + esc(x.g.name) + '</b><small>' + esc(x.g.next || 'no next step written') + '</small></div>'
+        + '<div class="nm"><b>' + esc(x.g.name) + '</b><small>' + esc(x.g.next || 'No next step written.') + '</small></div>'
         + '<div class="ago">' + agoText(x.m, x.g) + '</div></button>';
     });
   });
@@ -1001,18 +1303,17 @@ function stuckAge(s){
   return d === null ? '' : (d === 0 ? 'today' : d + 'd');
 }
 function stuckList(){
-  const open = S.stuck.filter(s => !s.done).sort((a,b) => (a.added < b.added ? -1 : 1)); // oldest first
+  const open = S.stuck.filter(s => !s.done && !isWaiting(s)).sort((a,b) => (a.added < b.added ? -1 : 1)); // oldest first
   const done = S.stuck.filter(s => s.done).slice(-12).reverse();
   let out = '';
   if(!open.length && !done.length){
-    return '<div class="card"><div class="h" style="margin:0">Empty. Put anything here you keep meaning to do &mdash; '
-      + 'the ones that have been sitting longest come to the top, because those are the ones being avoided.</div></div>';
+    return '<div class="card"><div class="h" style="margin:0">Empty. Add anything you keep meaning to do. Oldest surfaces first.</div></div>';
   }
   if(open.length){
-    out += '<div class="zone">Waiting &nbsp;·&nbsp; oldest first</div>';
+    out += '<div class="zone">Yours &nbsp;·&nbsp; oldest first</div>';
     open.forEach(s => {
       out += '<button class="g" onclick="openStuck(\'' + s.id + '\')">'
-        + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + esc(s.next || 'no next step written — this is usually why it is stuck') + '</small></div>'
+        + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + esc(s.next || 'No next step written.') + '</small></div>'
         + '<div class="sz ' + s.size + '">' + SIZES[s.size] + '</div>'
         + '<div class="ago"><b>' + stuckAge(s) + '</b></div></button>';
     });
@@ -1033,9 +1334,13 @@ function pickPool(sizeOnly){
   const a = groundSorted().filter(x => x.m.s !== 'fresh')
     .map(x => ({kind:'g', id:x.g.id, name:x.g.name, next:x.g.next, when:x.g.when,
                 sub:(x.m.ds === null ? 'never logged' : x.m.ds + ' days since last'), size:'m'}));
-  const b = S.stuck.filter(s => !s.done).sort((x,y) => (x.added < y.added ? -1 : 1))
-    .map(s => ({kind:'s', id:s.id, name:s.name, next:s.next, when:s.when,
-                sub:'stuck ' + stuckAge(s), size:s.size}));
+  const b = S.stuck.filter(s => !s.done && (!isWaiting(s) || silentDays(s) >= CHASE_DAYS))
+    .sort((x,y) => (x.added < y.added ? -1 : 1))
+    .map(s => isWaiting(s)
+      ? {kind:'s', id:s.id, name:s.name, next:'Chase ' + s.who, when:s.when,
+         sub:silentDays(s) + ' days silent', size:'s'}
+      : {kind:'s', id:s.id, name:s.name, next:s.next, when:s.when,
+         sub:'stuck ' + stuckAge(s), size:s.size});
   let pool = b.concat(a);
   if(sizeOnly) pool = pool.filter(p => p.size === sizeOnly);
   return pool;
@@ -1050,12 +1355,12 @@ function startOne(reset, sizeOnly){
   const p = onePool[oneIdx];
   $('#sheet').innerHTML = '<div class="one">'
     + '<div class="k">' + esc(p.name) + '</div>'
-    + '<div class="act">' + esc(p.next || 'Write the first physical step — that is the whole blockage.') + '</div>'
+    + '<div class="act">' + esc(p.next || 'No next step written.') + '</div>'
     + (p.when ? '<div class="whn">' + esc(p.when) + '</div>' : '')
     + '<div class="ttl">' + esc(p.sub) + ' &middot; ' + (oneIdx+1) + ' of ' + onePool.length + '</div>'
     + '</div>'
     + '<div class="row" style="margin-top:20px">'
-    + '<button class="btn gold" style="flex:1;padding:14px" onclick="runTimer(\'' + p.kind + '\',\'' + p.id + '\',5)">Sit with it 5 min</button></div>'
+    + '<button class="btn gold" style="flex:1;padding:14px" onclick="runTimer(\'' + p.kind + '\',\'' + p.id + '\',5)">Start 5 min</button></div>'
     + '<div class="row">'
     + '<button class="btn" style="flex:1" onclick="runTimer(\'' + p.kind + '\',\'' + p.id + '\',2)">2 min</button>'
     + '<button class="btn" style="flex:1" onclick="runTimer(\'' + p.kind + '\',\'' + p.id + '\',15)">15 min</button>'
@@ -1083,8 +1388,7 @@ function runTimer(kind, id, mins){
       + '<div class="row" style="margin-top:22px">'
       + '<button class="btn gold" style="flex:1;padding:13px" onclick="stopTimer();' + (kind==='g'?'markDone':'stuckDone') + '(\'' + id + '\')">Done</button>'
       + '<button class="btn" style="flex:1;padding:13px" onclick="stopTimer();closeMod()">Stop</button></div>'
-      + '<div class="mini">Finishing is not the deal. Staying until the clock runs out is the whole deal &mdash; '
-      + 'and most of the time you will carry on past it, because stopping mid-thing is the harder move.</div>';
+      + '<div class="mini">Stay until the clock runs out. Finishing is not required.</div>';
   };
   draw();
   clearInterval(tHandle);
@@ -1112,10 +1416,16 @@ function openStuck(id){
     + '<div class="hh">' + (s.done ? 'Done ' + esc(s.doneAt) + '.' : 'On the list ' + stuckAge(s) + '. ' + SIZES[s.size] + '.') + '</div>'
     + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:4px">Next physical step</div>'
     + '<input class="inp" id="sk-next" value="' + esc(s.next) + '" placeholder="the first thing your hands do">'
-    + '<div class="mini">Not the task &mdash; the movement. Not "do the taxes", but "open the drawer, take out the brown folder". '
-    + 'An item without one of these is the definition of stuck.</div>'
+    + '<div class="mini">A specific physical action, not the task name. Example: "open the drawer, take out the brown folder".</div>'
     + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">When &mdash; if / then</div>'
     + '<input class="inp" id="sk-when" value="' + esc(s.when) + '" placeholder="e.g. tomorrow, before I leave">'
+    + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">Waiting on</div>'
+    + '<input class="inp" id="sk-who" value="' + esc(s.who || '') + '" placeholder="name — leave blank if the move is yours">'
+    + (isWaiting(s)
+        ? '<div class="mini">' + silentDays(s) + ' days silent. Surfaces again at ' + CHASE_DAYS + '.</div>'
+          + '<div class="row"><button class="btn" style="flex:1" onclick="chased(\'' + s.id + '\')">Chased them today</button>'
+          + '<button class="btn" style="flex:1" onclick="unwait(\'' + s.id + '\')">Back to me</button></div>'
+        : '<div class="row"><button class="btn" style="flex:1" onclick="sentIt(\'' + s.id + '\')">Sent it — now waiting</button></div>')
     + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">How big</div>'
     + '<div class="tog" id="sk-size">' + Object.keys(SIZES).map(k =>
         '<button class="tg' + (s.size===k?' on':'') + '" data-s="' + k + '" onclick="pickZone(this)">' + SIZES[k] + '</button>').join('') + '</div>'
@@ -1123,16 +1433,40 @@ function openStuck(id){
     + '<button class="btn gold" style="flex:1;padding:13px" onclick="startStuckTimer(\'' + s.id + '\')">Start 5 min</button></div>'
     + '<div class="row">'
     + '<button class="btn" style="flex:1" onclick="saveStuck(\'' + s.id + '\')">Save</button>'
-    + '<button class="btn" style="flex:1" onclick="stuckDone(\'' + s.id + '\')">' + (s.done ? 'Reopen' : 'Done') + '</button></div>'
+    + '<button class="btn" style="flex:1" onclick="scheduleGround(\'' + s.id + '\')">Put in calendar</button></div>'
+    + '<div class="row"><button class="btn" style="flex:1" onclick="stuckDone(\'' + s.id + '\')">' + (s.done ? 'Reopen' : 'Done') + '</button></div>'
     + '<div class="row"><button class="btn" onclick="closeMod()">Close</button>'
     + '<button class="btn" style="color:var(--red)" onclick="delStuck(\'' + s.id + '\')">Delete</button></div>';
   $('#mod').classList.add('on');
 }
 function readStuckForm(s){
-  const n = $('#sk-next'), w = $('#sk-when'), z = $('#sk-size');
+  const n = $('#sk-next'), w = $('#sk-when'), z = $('#sk-size'), o = $('#sk-who');
   if(n) s.next = n.value.trim();
   if(w) s.when = w.value.trim();
+  if(o){
+    const was = (s.who||'').trim();
+    s.who = o.value.trim();
+    if(s.who && !was) s.since = todayKey();   // the clock starts when you hand it over
+    if(!s.who) s.since = null;
+  }
   if(z){ const on = z.querySelector('.tg.on'); if(on) s.size = on.dataset.s; }
+}
+function sentIt(id){
+  const s = findStuck(id); if(!s) return;
+  readStuckForm(s);
+  if(!(s.who||'').trim()){ toast('Who are you waiting on?'); return; }
+  s.since = todayKey();
+  save(); closeMod(); gTab = 'waiting'; renderGround(); toast('Waiting on ' + s.who);
+}
+function chased(id){
+  const s = findStuck(id); if(!s) return;
+  readStuckForm(s); s.since = todayKey();
+  save(); closeMod(); renderGround(); toast('Clock reset');
+}
+function unwait(id){
+  const s = findStuck(id); if(!s) return;
+  readStuckForm(s); s.who = ''; s.since = null;
+  save(); closeMod(); gTab = 'stuck'; renderGround(); toast('Back on your list');
 }
 function saveStuck(id){
   const s = findStuck(id); if(!s) return;
@@ -1171,7 +1505,7 @@ function addStuck(){
   S.stuck.push({
     id:'s' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
     name:nm, next:($('#sa-next').value||'').trim(), when:($('#sa-when').value||'').trim(),
-    size: on ? on.dataset.s : 'm', added:todayKey(), done:false, doneAt:null
+    size: on ? on.dataset.s : 'm', added:todayKey(), done:false, doneAt:null, who:'', since:null
   });
   save(); closeMod(); gTab = 'stuck'; renderGround(); toast('Added');
 }
@@ -1186,7 +1520,7 @@ function openGround(id){
     + '<input class="inp" id="gn-next" value="' + esc(g.next) + '" placeholder="the first thing your hands do">'
     + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">When &mdash; if / then</div>'
     + '<input class="inp" id="gn-when" value="' + esc(g.when) + '" placeholder="e.g. Saturday, after coffee">'
-    + '<div class="mini">Naming a specific when-and-where roughly doubles follow-through against intention alone. It is the most reliable single trick in this app.</div>'
+    + '<div class="mini">A specific time and place. Roughly doubles follow-through.</div>'
     + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">Every how many days</div>'
     + '<input class="inp" id="gn-days" type="number" min="1" max="1095" value="' + g.days + '">'
     + '<div class="row" style="margin-top:16px">'
@@ -1255,24 +1589,69 @@ function addGround(){
 
 /* calendar handoff — the app cannot send notifications, so it hands the item
    to something that can, with the alarm written into the event itself. */
+function findAny(id){ return findG(id) || findStuck(id); }
 function scheduleGround(id){
-  const g = findG(id); if(!g) return;
-  readGroundForm(g); save();
+  const g = findAny(id); if(!g) return;
+  if(findG(id)) readGroundForm(g); else readStuckForm(g);
+  save();
   const t = addDays(new Date(), 1);
   $('#sheet').innerHTML = '<h3>Put it in the calendar</h3>'
-    + '<div class="hh">Makes a real calendar event with a 30-minute alert baked into it, so it does not depend on your calendar\'s default settings. Opens in whatever calendar app you use.</div>'
+    + '<div class="hh">Creates a calendar event with a 30-minute alert.</div>'
     + '<input class="inp" id="sc-d" type="date" value="' + keyOf(t) + '">'
     + '<input class="inp" id="sc-t" type="time" value="10:00">'
     + '<div class="row" style="margin-top:16px"><button class="btn gold" style="flex:1;padding:13px" onclick="makeICS(\'' + g.id + '\')">Create event</button>'
-    + '<button class="btn" onclick="openGround(\'' + g.id + '\')">Back</button></div>';
+    + '<button class="btn" onclick="' + (findG(id) ? 'openGround' : 'openStuck') + '(\'' + g.id + '\')">Back</button></div>';
 }
 function icsEsc(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
 function icsStamp(d){
   return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T'
        + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
 }
+/* one file containing the whole recurring rhythm, with alarms */
+function icsDownload(lines, filename){
+  const blob = new Blob([lines.join('\r\n')], {type:'text/calendar'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function nextDowAt(dow, hh, mm, lastSunday){
+  const n = new Date();
+  let d = new Date(n.getFullYear(), n.getMonth(), n.getDate(), hh, mm, 0);
+  for(let i=0;i<400;i++){
+    const dim = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    const ok = lastSunday ? (d.getDay() === 0 && d.getDate() + 7 > dim) : (d.getDay() === dow);
+    if(ok && d >= n) return d;
+    d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1, hh, mm, 0);
+  }
+  return d;
+}
+function exportRituals(){
+  let lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Compass//Rhythm//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  RITUALS.forEach(r => {
+    const tp = r.time.split(':');
+    const start = nextDowAt(r.lastSunday ? 0 : r.days[0], +tp[0], +tp[1], !!r.lastSunday);
+    const end = new Date(start.getTime() + r.mins*60000);
+    lines = lines.concat([
+      'BEGIN:VEVENT',
+      'UID:compass-' + r.id + '@compass.local',
+      'DTSTAMP:' + icsStamp(new Date()),
+      'DTSTART:' + icsStamp(start),
+      'DTEND:' + icsStamp(end),
+      'RRULE:' + r.rrule,
+      'SUMMARY:' + icsEsc(r.t),
+      'DESCRIPTION:' + icsEsc(r.note),
+      'BEGIN:VALARM','TRIGGER:-PT15M','ACTION:DISPLAY','DESCRIPTION:' + icsEsc(r.t),'END:VALARM',
+      'END:VEVENT'
+    ]);
+  });
+  lines.push('END:VCALENDAR');
+  icsDownload(lines, 'compass-rhythm.ics');
+  toast('Open it on the phone to add them all');
+}
+
 function makeICS(id){
-  const g = findG(id); if(!g) return;
+  const g = findAny(id); if(!g) return;
   const dv = $('#sc-d').value, tv = $('#sc-t').value || '10:00';
   if(!dv){ toast('Pick a date'); return; }
   const dp = dv.split('-'), tp = tv.split(':');
@@ -1303,8 +1682,8 @@ function makeICS(id){
    The audience number is an outcome; it has one input, which is work
    leaving the building. Hours do not produce an audience — finished
    things seen by people do. So finished things get counted. */
-const RKINDS = [{id:'written',t:'Written'},{id:'shot',t:'Shot'},{id:'shown',t:'Shown to people'}];
-const ROUTE_TARGET = {written:20, shot:10};
+var RKINDS = [{id:'written',t:'Written'},{id:'shot',t:'Shot'},{id:'shown',t:'Shown to people'}];
+var ROUTE_TARGET = {written:20, shot:10};
 
 function releaseCounts(from, to){
   const c = {written:0, shot:0, shown:0};
@@ -1317,8 +1696,7 @@ function releaseCounts(from, to){
 }
 function addRelease(back){
   $('#sheet').innerHTML = '<h3>Put out</h3>'
-    + '<div class="hh">Something finished this month. Written means a draft you would let someone read. '
-    + 'Shown means actual people saw it &mdash; that is the only one the audience number responds to.</div>'
+    + '<div class="hh">Written = a draft someone could read. Shown = people saw it.</div>'
     + '<input class="inp" id="rl-title" placeholder="what it was">'
     + '<div class="tog" style="margin-top:12px" id="rl-kind">'
     + RKINDS.map((k,i) => '<button class="tg' + (i===0?' on':'') + '" data-k="' + k.id + '" onclick="pickZone(this)">' + k.t + '</button>').join('')
@@ -1355,7 +1733,7 @@ function renderSrc(){
   $('#s-count').textContent = S.sources.length + ' · ' + unseen + ' unopened';
 
   $('#s-rand').innerHTML = '<button class="startone" onclick="somewhereNew()">'
-    + 'Somewhere new &nbsp;&middot;&nbsp; the one you have left longest</button>';
+    + 'Somewhere new</button>';
 
   let out = '';
   SGROUPS.forEach(gr => {
@@ -1405,7 +1783,7 @@ function somewhereNew(){
 function editSource(id){
   const s = id ? S.sources.filter(x => x.id === id)[0] : null;
   $('#sheet').innerHTML = '<h3>' + (s ? esc(s.name) : 'Add a source') + '</h3>'
-    + (s && !s.url ? '<div class="hh">I could not work out what this one was from your list — paste the address and it joins the rest.</div>' : '')
+    + (s && !s.url ? '<div class="hh">No URL yet. Paste the address.</div>' : '')
     + '<input class="inp" id="sr-name" value="' + esc(s ? s.name : '') + '" placeholder="name">'
     + '<input class="inp" id="sr-url" type="url" value="' + esc(s ? s.url : '') + '" placeholder="https://">'
     + '<input class="inp" id="sr-note" value="' + esc(s ? s.note : '') + '" placeholder="note (optional)">'
@@ -1441,9 +1819,11 @@ document.addEventListener('input', e => {
 /* ---------- CAPTURES ---------- */
 function openCapture(){
   $('#sheet').innerHTML = '<h3>Capture</h3>'
-    + '<div class="hh">Whatever just arrived. Write it down and go back to what you were doing. It is not a task and nothing will chase you about it.</div>'
+    + '<div class="hh">Note it and carry on. Not a task — unless it has a time, in which case give it one.</div>'
     + '<textarea class="inp" id="capIn" placeholder="the thing" style="min-height:120px"></textarea>'
-    + '<div class="row"><button class="btn gold" onclick="saveCap()">Keep it</button><button class="btn" onclick="closeMod()">Cancel</button></div>';
+    + '<div class="row"><button class="btn gold" style="flex:1" onclick="saveCap()">Keep it</button>'
+    + '<button class="btn" style="flex:1" onclick="capToEvent()">Give it a time</button></div>'
+    + '<div class="row"><button class="btn" onclick="closeMod()">Cancel</button></div>';
   $('#mod').classList.add('on');
   setTimeout(()=>{ const el = $('#capIn'); if(el) el.focus(); }, 90);
 }
@@ -1453,11 +1833,17 @@ function saveCap(){
   S.captures.unshift({t:Date.now(), text:v});
   save(); closeMod(); toast('Kept'); renderArc();
 }
+/* straight from the + button: something came up and it has a time on it */
+function capToEvent(){
+  const v = ($('#capIn').value||'').trim();
+  if(!v){ toast('Write it first'); return; }
+  editEvent(null, v);
+}
 function closeMod(){ if(tLock) return; $('#mod').classList.remove('on'); }
 function renderArc(){
   const list = $('#a-list');
   if(!S.captures.length){
-    list.innerHTML = '<div class="card"><div class="h" style="margin:0">Nothing captured yet. The + button, any time.</div></div>';
+    list.innerHTML = '<div class="card"><div class="h" style="margin:0">Empty. Use the + button.</div></div>';
     return;
   }
   list.innerHTML = S.captures.slice(0,80).map((c,i) =>
@@ -1498,7 +1884,7 @@ function doImport(ev){
 /* ---------- first run ---------- */
 function firstRun(){
   $('#sheet').innerHTML = '<h3>Once</h3>'
-    + '<div class="hh">Four things, then the app locks its own settings. After this, compasses change only inside the monthly and yearly reviews — not on a Tuesday.</div>'
+    + '<div class="hh">Set once. After this, changes happen only in the monthly and yearly reviews.</div>'
     + '<input class="inp" id="s-a" placeholder="primary discipline (e.g. writing)">'
     + '<input class="inp" id="s-b" placeholder="second — in service of the first (e.g. directing)">'
     + '<input class="inp" id="s-c" placeholder="third">'
@@ -1527,7 +1913,7 @@ function go(v){
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.v)));
 
 function renderAll(){
-  try{ renderToday(); renderLog(); renderGround(); renderSrc(); renderHz(); renderRev(); renderArc(); }
+  try{ renderToday(); renderDay(); renderLog(); renderGround(); renderSrc(); renderHz(); renderRev(); renderArc(); }
   catch(e){ console.error('render error', e); }
 }
 
