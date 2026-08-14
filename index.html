@@ -6,10 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Compass">
+<meta name="apple-mobile-web-app-title" content="Table">
 <meta name="theme-color" content="#0c0c0e">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230c0c0e'/%3E%3Ccircle cx='90' cy='90' r='54' fill='none' stroke='%23c9a44c' stroke-width='4'/%3E%3Cpath d='M90 42 L102 90 L90 138 L78 90 Z' fill='%23c9a44c'/%3E%3C/svg%3E">
-<title>Compass</title>
+<title>Table</title>
 <style>
 :root{
   --bg:#0c0c0e; --panel:#141417; --panel2:#1b1b20; --line:#2a2a31;
@@ -229,7 +229,7 @@ nav svg{width:20px;height:20px}
 
 <!-- ============ TODAY ============ -->
 <div class="view on" id="v-today"><div class="wrap">
-  <div class="hd"><h1>Compass</h1><div class="sub" id="t-day"></div></div>
+  <div class="hd"><h1>Table</h1><div class="sub" id="t-day"></div></div>
   <div class="datebar" id="t-date"></div>
 
   <div class="chain">
@@ -374,12 +374,12 @@ nav svg{width:20px;height:20px}
 
 <script>
 /* ============================================================
-   COMPASS — single-file, offline, local-only.
+   TABLE — single-file, offline, local-only.
    Design constraints, deliberate:
    - The floor is binary and small. Everything else is logged, never graded.
    - Reviews are hard-locked to their windows. Re-planning is the compulsion,
      so the UI performs the response prevention.
-   - Compasses are editable only inside a review window.
+   - The long-range items are editable only inside a review window.
    ============================================================ */
 
 var KEY = 'compass.v1';
@@ -636,7 +636,7 @@ function daysUntil(d){
   const a = new Date(); const t = new Date(a.getFullYear(),a.getMonth(),a.getDate());
   return Math.round((d - t) / 86400000);
 }
-// Compasses may only be edited while some review window is open.
+// The long-range items may only be edited while a review window is open.
 function editable(){ const L = locks(); return L.month || L.year; }
 
 /* ---------- chain ---------- */
@@ -792,7 +792,7 @@ function eventICS(id){
   const dp = e.date.split('-'), tp = e.time.split(':');
   const start = new Date(+dp[0], +dp[1]-1, +dp[2], +tp[0], +tp[1], 0);
   const end = new Date(start.getTime() + 60*60000);
-  icsDownload(['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Compass//Event//EN',
+  icsDownload(['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Table//Event//EN',
     'BEGIN:VEVENT','UID:' + e.id + '@compass.local','DTSTAMP:' + icsStamp(new Date()),
     'DTSTART:' + icsStamp(start),'DTEND:' + icsStamp(end),
     'SUMMARY:' + icsEsc(e.title),'DESCRIPTION:' + icsEsc(e.who || ''),
@@ -938,7 +938,7 @@ function renderHz(){
   out += box('The route', h.route, true);
   out += box('This month', (S.cfg.project ? 'Active project: '+S.cfg.project+'\n' : '') + (h.month || 'Set at the monthly review.'), true);
   out += box('This week', h.week || 'Set at the Sunday review.', true);
-  out += box('Love day', w.love ? 'Taken this week.' : 'Not yet taken. Compass: one day a week given to art, romance, or nature.', true);
+  out += box('Love day', w.love ? 'Taken this week.' : 'Not yet taken. One day a week given to art, someone, or being outside.', true);
   out += box('Travel', h.travel, true);
   out += box('Home', h.home, true);
   // the recurring week, computed — no connection needed
@@ -1011,7 +1011,7 @@ function weekForm(){
     + (w.delivery?'Sent this week':'Not sent') + '</button></div></div>'
     + '<div class="card"><h3>Love day</h3><div class="h">One day a week given to art, someone, or being outside.</div>'
     + '<div class="tog"><button class="tg'+(w.love?' on':'')+'" onclick="wLove()">'+(w.love?'Taken this week':'Not taken')+'</button></div></div>'
-    + '<div class="card"><h3>Schedule</h3><div class="h">Weekly compass #2. Changes to the coming week &mdash; write them once, here, and then stop.</div>'
+    + '<div class="card"><h3>Schedule</h3><div class="h">Changes to the coming week &mdash; write them once, here, and then stop.</div>'
     + '<textarea class="inp" id="w-sched" placeholder="What next week actually looks like.">'+esc(w.sched)+'</textarea></div>'
     + '<div class="card"><h3>Note</h3><textarea class="inp" id="w-note" placeholder="Anything worth keeping from the week.">'+esc(w.note)+'</textarea></div>'
     + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveWeek()">Close the week</button>';
@@ -1060,7 +1060,7 @@ function monthForm(){
     + '<div class="card"><h3>Active project for ' + MON[now.getMonth()] + '</h3>'
     + '<div class="h">One project. Changed here, once a month.</div>'
     + '<input class="inp" id="m-proj" value="' + esc(S.cfg.project) + '" placeholder="the one thing"></div>'
-    + '<div class="card"><h3>The month ahead</h3><div class="h">Monthly compass &mdash; what is coming, and anything to add. This becomes the Horizon.</div>'
+    + '<div class="card"><h3>The month ahead</h3><div class="h">What is coming, and anything to add. This becomes the Horizon.</div>'
     + '<textarea class="inp" id="m-hz" placeholder="Shape of the month.">' + esc(S.cfg.hz.month) + '</textarea></div>'
     + '<div class="card"><h3>Review</h3><textarea class="inp" id="m-note" placeholder="What actually happened. Plainly.">' + esc(m.note) + '</textarea></div>'
     + '<div class="card"><h3>Disciplines</h3><div class="h">Three slots. The first is the one the others feed.</div>'
@@ -1108,7 +1108,7 @@ function yearForm(){
   const yk = String(now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear());
   const y = year(yk);
   const s = rangeStats(new Date(+yk,0,1), new Date(+yk,11,31));
-  return '<div class="card"><div class="h" style="margin:0">Yearly compass &mdash; reviewing <b style="color:var(--ink)">' + yk + '</b>.</div></div>'
+  return '<div class="card"><div class="h" style="margin:0">Reviewing <b style="color:var(--ink)">' + yk + '</b>.</div></div>'
     + '<div class="stats">'
     + st(s.write, 'days written') + st(s.full, 'full floor days')
     + st(s.hours.toFixed(0) + 'h', 'creative hours') + st(s.link.toFixed(0) + 'h', 'linking hours &mdash; the maps')
@@ -1134,7 +1134,7 @@ function yearForm(){
     + '</div>'
     + '<div class="card"><h3>Community &amp; network</h3><textarea class="inp" id="y-2" placeholder="Who knows the work now who did not in January.">' + esc(y.network) + '</textarea></div>'
     + '<div class="card"><h3>Maps &mdash; number and density</h3><textarea class="inp" id="y-3" placeholder="What got linked to what.">' + esc(y.maps) + '</textarea></div>'
-    + '<div class="card"><h3>Future compasses</h3><div class="h">The only place these change. Four years, route, travel, home.</div>'
+    + '<div class="card"><h3>Long range</h3><div class="h">The only place these change. Four years, route, travel, home.</div>'
     + '<textarea class="inp" id="y-4" placeholder="Four-year target — revised or held.">' + esc(S.cfg.hz.four) + '</textarea>'
     + '<textarea class="inp" id="y-5" placeholder="The route.">' + esc(S.cfg.hz.route) + '</textarea>'
     + '<textarea class="inp" id="y-6" placeholder="Travel.">' + esc(S.cfg.hz.travel) + '</textarea>'
@@ -1627,7 +1627,7 @@ function nextDowAt(dow, hh, mm, lastSunday){
   return d;
 }
 function exportRituals(){
-  let lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Compass//Rhythm//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  let lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Table//Rhythm//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
   RITUALS.forEach(r => {
     const tp = r.time.split(':');
     const start = nextDowAt(r.lastSunday ? 0 : r.days[0], +tp[0], +tp[1], !!r.lastSunday);
@@ -1646,7 +1646,7 @@ function exportRituals(){
     ]);
   });
   lines.push('END:VCALENDAR');
-  icsDownload(lines, 'compass-rhythm.ics');
+  icsDownload(lines, 'table-rhythm.ics');
   toast('Open it on the phone to add them all');
 }
 
@@ -1659,7 +1659,7 @@ function makeICS(id){
   if(isNaN(start.getTime())){ toast('Bad date'); return; }
   const end = new Date(start.getTime() + 45*60000);
   const lines = [
-    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Compass//Ground//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Table//Ground//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
     'BEGIN:VEVENT',
     'UID:' + g.id + '-' + Date.now() + '@compass.local',
     'DTSTAMP:' + icsStamp(new Date()),
@@ -1860,7 +1860,7 @@ function doExport(){
   const blob = new Blob([JSON.stringify(S,null,2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'compass-' + todayKey() + '.json';
+  a.download = 'table-' + todayKey() + '.json';
   document.body.appendChild(a); a.click(); a.remove();
   toast('Exported');
 }
