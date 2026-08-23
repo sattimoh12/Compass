@@ -116,7 +116,7 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.55}
 .tab{flex:1;padding:10px 4px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
   font-size:12px;color:var(--dim);letter-spacing:.5px;text-align:center}
 .tab.on{background:rgba(201,164,76,.12);border-color:rgba(201,164,76,.4);color:var(--gold)}
-.tab.lk{opacity:.4}
+
 
 /* stats */
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
@@ -223,6 +223,15 @@ nav svg{width:20px;height:20px}
   z-index:200;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.on{opacity:1}
 .mini{font-size:11.5px;color:var(--faint);line-height:1.6;margin-top:10px}
+
+/* the names list — lives inside one standing item, not a screen of its own */
+.pr{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:9px 11px;margin-top:7px}
+.pr .nm{flex:1;min-width:0}
+.pr .nm b{font-weight:500;font-size:14px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr .nm small{color:var(--faint);font-size:11.5px;display:block;margin-top:2px}
+.pr .btn{flex:0 0 auto;padding:7px 11px;font-size:12px}
+.pr .x{flex:0 0 auto;background:none;border:0;color:var(--faint);font-size:17px;line-height:1;padding:4px 3px}
 </style>
 </head>
 <body>
@@ -235,8 +244,8 @@ nav svg{width:20px;height:20px}
   <div class="chain">
     <div class="n" id="t-chain">0</div>
     <div style="flex:1">
-      <div class="lbl">Day chain</div>
-      <div class="note" id="t-chainnote">Days in a row you hit five pages.</div>
+      <div class="lbl">This month</div>
+      <div class="note" id="t-chainnote">Days you hit five pages.</div>
       <div class="dots" id="t-dots"></div>
     </div>
   </div>
@@ -244,6 +253,7 @@ nav svg{width:20px;height:20px}
   <div class="sec">Expectation <span id="t-explock"></span></div>
   <div class="exp" id="t-expbox"></div>
 
+  <div id="t-owed"></div>
   <div id="t-fixed"></div>
 
   <div class="sec">The floor <span id="t-floorct"></span></div>
@@ -382,7 +392,13 @@ nav svg{width:20px;height:20px}
    - The long-range items are editable only inside a review window.
    ============================================================ */
 
-var KEY = 'compass.v1';
+/* Table and Compass shipped with the same storage key, so on a single origin
+   they overwrote each other's saves. Table now owns table.v1. The old record is
+   copied across once and deliberately LEFT IN PLACE, so Compass keeps its data
+   and nothing is stranded under a key nothing reads. */
+var KEY = 'table.v1';
+var OLD_KEY = 'compass.v1';
+var ADOPTED = false;
 var FLOOR = [
   {id:'write',  t:'Wrote five pages',   d:'Five pages minimum.'},
   {id:'read',   t:'Read fifteen pages', d:'Book, magazine, or article.'},
@@ -423,8 +439,12 @@ var SEED_GROUND = [
   {name:'Student loans — recertify', zone:'admin', days:365, next:'Log in and recertify'},
   {name:'Back up pages to the drive folder', zone:'work', days:7, next:'Drag this week’s pages into the folder'},
   {name:'Watch one film',     zone:'work',  days:7,   next:'Pick it now and put it on'},
-  {name:'Follow up with community connections', zone:'people', days:7, next:'Open the list, message the oldest name on it'},
+  {name:'Follow up with community connections', zone:'people', days:7, next:'Open the list, message the oldest name on it', list:'people'},
   {name:'Meet someone from another discipline', zone:'people', days:30, next:'Message one person to arrange a coffee'},
+  {name:'Message a friend just to talk', zone:'people', days:7, next:'Open WhatsApp, message the name you haven’t in longest'},
+  {name:'See someone in person', zone:'people', days:10, next:'Message two people a day and a time for this week'},
+  {name:'Something with a crowd', zone:'people', days:21, next:'Open the listings, pick one, send it to one person'},
+  {name:'Old friends, long distance', zone:'people', days:45, next:'Send a voice note — don’t wait for a call slot'},
   {name:'Housing search',     zone:'admin', days:7,   next:'Open WG-Gesucht, send one message'}
 ];
 
@@ -432,6 +452,7 @@ var SEED_GROUND = [
    ones marked mine were filled in and spot-checked. */
 var SGROUPS = [
   {id:'top',     t:'Top three'},
+  {id:'local',   t:'Local art magazines'},
   {id:'read',    t:'Reading'},
   {id:'licence', t:'Need a licence'},
   {id:'check',   t:'To check'},
@@ -442,6 +463,8 @@ var SEED_SOURCES = [
   ['Frieze','https://www.frieze.com','top',''],
   ['Hyperallergic','https://hyperallergic.com','top',''],
   ['Aperture','https://aperture.org','top','hosts talks with the artists'],
+
+  ['Berlin Art Link — reviews','https://www.berlinartlink.com/category/reviews/','local','shows worth seeing, in the city'],
 
   ['The New Yorker','https://www.newyorker.com','read',''],
   ['AnOther','https://www.anothermag.com','read',''],
@@ -500,6 +523,8 @@ var SEED_SOURCES = [
 var RITUALS = [
   {id:'deliver', t:'Delivery — send one finished thing', days:[5], time:'18:00', mins:30,
    rrule:'FREQ=WEEKLY;BYDAY=FR', note:'One finished thing, sent to two or three people.'},
+  {id:'social',  t:'Arrange the week — send two messages', days:[1], time:'18:00', mins:10,
+   rrule:'FREQ=WEEKLY;BYDAY=MO', note:'Two people, a day and a time. The ask, not the meeting.'},
   {id:'weekly',  t:'Weekly review + horizon', days:[0], time:'19:00', mins:15,
    rrule:'FREQ=WEEKLY;BYDAY=SU', note:'Next week, the love day, the horizon.'},
   {id:'family',  t:'Family call — California lunch', days:[0,3], time:'21:30', mins:30,
@@ -532,8 +557,10 @@ function blankState(){
   return {v:1, days:{}, weeks:{}, months:{}, years:{}, captures:[],
           ground: SEED_GROUND.map((g,i) => ({
             id:'g'+i+'_'+Math.random().toString(36).slice(2,7),
-            name:g.name, zone:g.zone, days:g.days, next:g.next, when:'', last:null, hist:[]
+            name:g.name, zone:g.zone, days:g.days, next:g.next, list:g.list||'', when:'', last:null, hist:[]
           })),
+          people: [],
+          owed: [],
           stuck: [],
           events: [],
           releases: [],
@@ -541,23 +568,55 @@ function blankState(){
             id:'src'+i, name:s[0], url:s[1], group:s[2], note:s[3], last:null, hits:0
           })),
           cfg:{discA:'', discB:'', discC:'', project:'', hz:Object.assign({},DEFAULT_HZ), setup:false},
-          meta:{created:todayKey()}};
+          meta:{created:todayKey(), seeded:SEED_GROUND.map(g => g.name),
+                seededSrc:SEED_SOURCES.map(s => s[0])}};
+}
+/* shallow-merge so older saves keep working, then bring the save up to the
+   current seed list. meta.seeded records which seeds this save has already
+   been offered, so anything deleted on purpose stays deleted. */
+function normalize(p){
+  const b = blankState();
+  const r = Object.assign(b, p, {cfg:Object.assign(b.cfg, p.cfg||{}, {hz:Object.assign({},DEFAULT_HZ,(p.cfg&&p.cfg.hz)||{})})});
+  if(!Array.isArray(r.ground)) r.ground = blankState().ground;
+  if(!Array.isArray(r.stuck)) r.stuck = [];
+  if(!Array.isArray(r.owed)) r.owed = [];
+  if(!Array.isArray(r.releases)) r.releases = [];
+  if(!Array.isArray(r.events)) r.events = [];
+  if(!Array.isArray(r.sources) || !r.sources.length) r.sources = blankState().sources;
+  if(!Array.isArray(r.captures)) r.captures = [];
+  if(!Array.isArray(r.people)) r.people = [];
+  if(!r.meta || typeof r.meta !== 'object') r.meta = {created:todayKey()};
+  if(!Array.isArray(r.meta.seeded)) r.meta.seeded = r.ground.map(g => g.name);
+  if(!Array.isArray(r.meta.seededSrc)) r.meta.seededSrc = r.sources.map(s => s.name);
+  SEED_SOURCES.forEach(sd => {
+    if(r.meta.seededSrc.indexOf(sd[0]) > -1) return;
+    r.sources.push({id:'src' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+      name:sd[0], url:sd[1], group:sd[2], note:sd[3], last:null, hits:0});
+    r.meta.seededSrc.push(sd[0]);
+  });
+  SEED_GROUND.forEach(sd => {
+    if(r.meta.seeded.indexOf(sd.name) > -1) return;
+    r.ground.push({id:'g' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+      name:sd.name, zone:sd.zone, days:sd.days, next:sd.next, list:sd.list||'',
+      when:'', last:null, hist:[]});
+    r.meta.seeded.push(sd.name);
+  });
+  // the community item predates the names list
+  r.ground.forEach(g => {
+    const sd = SEED_GROUND.filter(x => x.name === g.name)[0];
+    if(sd && sd.list && !g.list) g.list = sd.list;
+  });
+  return r;
 }
 function load(){
   try{
-    const raw = localStorage.getItem(KEY);
+    let raw = localStorage.getItem(KEY);
+    if(raw === null){
+      const old = localStorage.getItem(OLD_KEY);
+      if(old !== null){ raw = old; ADOPTED = true; }   /* first run on the new key */
+    }
     if(!raw) return blankState();
-    const p = JSON.parse(raw);
-    const b = blankState();
-    // shallow-merge so older saves keep working
-    const r = Object.assign(b, p, {cfg:Object.assign(b.cfg, p.cfg||{}, {hz:Object.assign({},DEFAULT_HZ,(p.cfg&&p.cfg.hz)||{})})});
-    if(!Array.isArray(r.ground)) r.ground = blankState().ground;
-    if(!Array.isArray(r.stuck)) r.stuck = [];
-    if(!Array.isArray(r.releases)) r.releases = [];
-    if(!Array.isArray(r.events)) r.events = [];
-    if(!Array.isArray(r.sources) || !r.sources.length) r.sources = blankState().sources;
-    if(!Array.isArray(r.captures)) r.captures = [];
-    return r;
+    return normalize(JSON.parse(raw));
   }catch(e){ console.warn('load failed', e); return blankState(); }
 }
 function save(){
@@ -676,13 +735,13 @@ function renderToday(){
   const c = chain();
   const mk = monthKey(now);
   const monthWrite = Object.keys(S.days).filter(x => x.slice(0,7) === mk && S.days[x].floor && S.days[x].floor.write).length;
-  $('#t-chain').textContent = c;
-  // the month total sits beside the chain on purpose: a broken chain does not
-  // erase the month, so breaking it is a fact rather than a catastrophe
-  $('#t-chainnote').textContent = (c === 0
-    ? 'No chain yet — five pages starts it.'
-    : c + (c === 1 ? ' day' : ' days') + ' in a row at five pages.')
-    + '  ·  ' + monthWrite + ' day' + (monthWrite === 1 ? '' : 's') + ' this month, chain or no chain.';
+  /* the month is the large number and the run is a footnote, not the other way
+     round. A streak is a thing to keep perfect and then a thing to repair, and
+     the first break ends it; a month total only ever goes up, and a missed day
+     costs one from it rather than resetting anything to zero. */
+  $('#t-chain').textContent = monthWrite;
+  $('#t-chainnote').textContent = 'Days you hit five pages'
+    + (c > 0 ? '.  ·  ' + c + (c === 1 ? ' day' : ' days') + ' in a row right now.' : ', this month.');
 
   // last 14 days
   let dots = '';
@@ -709,6 +768,18 @@ function renderToday(){
   const rt = ritualsOn(now).map(r => ({t:r.t, note:r.note, time:r.time, id:null}));
   const ev = eventsOn(k).map(e => ({t:e.title, note:e.who || e.note || '', time:e.time, id:e.id}));
   const fixed = rt.concat(ev).sort((a,b) => a.time < b.time ? -1 : 1);
+  /* only appears when something is actually near — nothing due, nothing shown */
+  const dueSoon = owedOpen().map(o => ({o:o, n:owedDays(o)}))
+    .filter(x => x.n !== null && x.n <= OWED_SOON)
+    .sort((a,b) => a.n - b.n);
+  $('#t-owed').innerHTML = dueSoon.length
+    ? '<div class="sec">Owed <span style="color:var(--faint)">' + dueSoon.length + '</span></div>'
+      + dueSoon.map(x => '<button class="g" onclick="gTab=\'owed\';go(\'gr\');openOwed(\'' + x.o.id + '\')">'
+        + '<div class="pip ripe"></div>'
+        + '<div class="nm"><b>' + esc(x.o.what) + '</b><small>' + esc(x.o.who) + '</small></div>'
+        + '<div class="ago"><b>' + dueText(x.n) + '</b></div></button>').join('')
+    : '';
+
   $('#t-fixed').innerHTML = '<div class="sec">Fixed today <span style="color:var(--faint)">'
     + (fixed.length ? fixed.length : '') + '</span></div>'
     + (fixed.length ? fixed.map(f =>
@@ -721,7 +792,8 @@ function renderToday(){
 
   // floor
   const doneN = FLOOR.filter(f => d.floor[f.id]).length;
-  $('#t-floorct').textContent = doneN + ' / ' + FLOOR.length;
+  /* a denominator turns an ordinary day into a visible gap */
+  $('#t-floorct').textContent = doneN ? doneN + ' done' : '';
   $('#t-floor').innerHTML = FLOOR.map(f =>
     '<button class="f'+(d.floor[f.id]?' done':'')+'" onclick="toggleFloor(\''+f.id+'\')">'
     + '<div class="box">'+CHECK+'</div><div><div class="t">'+f.t+'</div><div class="d">'+f.d+'</div></div></button>'
@@ -956,8 +1028,9 @@ function renderHz(){
     + '<div class="row"><button class="btn gold" onclick="exportRituals()">Put this rhythm in your iPhone calendar</button></div>'
     + '<div class="mini">One file with all recurring events and alarms.</div></div>';
 
-  out += '<div class="hz"><div class="k">Next review</div><div class="b d">Sunday review opens in '
-       + daysUntil(nextSun) + ' day' + (daysUntil(nextSun)===1?'':'s') + '.<br>Monthly review opens on the 1st.</div></div>';
+  out += '<div class="hz"><div class="k">Next review</div><div class="b d">Weekly is due in '
+       + daysUntil(nextSun) + ' day' + (daysUntil(nextSun)===1?'':'s') + ', monthly on the 1st.'
+       + '<br>Both open any day — due is a nudge, not a gate.</div></div>';
   $('#hz-body').innerHTML = out;
 
   function box(k, body, dim){
@@ -970,33 +1043,22 @@ var revTab = null;
 function renderRev(){
   const L = locks(), now = new Date();
   $('#r-date').textContent = longDate(now);
-  const open = ['week','month','year'].filter(k => L[k]);
-  $('#r-state').textContent = open.length ? 'Open' : 'Locked';
-
-  if(!revTab || !L[revTab]) revTab = open[0] || null;
-
+  /* these used to open on their days only — any other day showed a lock screen
+     counting down. Missing one made the whole thing feel broken, and broken
+     things get abandoned rather than resumed. They open whenever you turn up
+     now; the locks only say which one is in season. */
+  const due = ['week','month','year'].filter(k => L[k]);
   const names = {week:'Weekly', month:'Monthly', year:'Yearly'};
-  $('#r-tabs').innerHTML = ['week','month','year'].map(k =>
-    '<button class="tab'+(revTab===k?' on':'')+(L[k]?'':' lk')+'" onclick="'+(L[k]?"revTab='"+k+"';renderRev()":"toast('Locked')")+'">'
-    + names[k] + (L[k]?'':' · locked') + '</button>').join('');
+  $('#r-state').textContent = due.length ? names[due[0]] + ' is due' : '';
+  if(!revTab) revTab = due[0] || 'week';
 
-  if(!revTab){ $('#r-body').innerHTML = lockScreen(); return; }
+  $('#r-tabs').innerHTML = ['week','month','year'].map(k =>
+    '<button class="tab'+(revTab===k?' on':'')+'" onclick="revTab=\''+k+'\';renderRev()">'
+    + names[k] + '</button>').join('');
+
   if(revTab === 'week')  $('#r-body').innerHTML = weekForm();
   if(revTab === 'month') $('#r-body').innerHTML = monthForm();
   if(revTab === 'year')  $('#r-body').innerHTML = yearForm();
-}
-function lockScreen(){
-  const nw = nextUnlock('week'), nm = nextUnlock('month');
-  const soonest = nw < nm ? nw : nm;
-  const kind = nw < nm ? 'Weekly' : 'Monthly';
-  const n = daysUntil(soonest);
-  return '<div class="lock">'
-    + '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#8b8779" stroke-width="1.5" width="22" height="22">'
-    + '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>'
-    + '<h2>Nothing to review today</h2>'
-    + '<p>Weekly opens Sunday. Monthly opens the 1st through the 3rd. Yearly opens 28 December through 7 January.</p>'
-    + '<div class="cd">'+n+'</div><div class="cdl">day'+(n===1?'':'s')+' until the '+kind.toLowerCase()+' review</div>'
-    + '<p style="margin-top:26px;font-size:12.5px;color:var(--faint)">Reviews open on their days only.</p></div>';
 }
 
 function weekForm(){
@@ -1233,6 +1295,7 @@ function renderGround(){
 
   $('#g-tabs').innerHTML =
       '<button class="tab' + (gTab==='stuck'?' on':'') + '" onclick="gTab=\'stuck\';renderGround()">Stuck · ' + openStuck.length + '</button>'
+    + '<button class="tab' + (gTab==='owed'?' on':'') + '" onclick="gTab=\'owed\';renderGround()">Owed · ' + owedOpen().length + '</button>'
     + '<button class="tab' + (gTab==='waiting'?' on':'') + '" onclick="gTab=\'waiting\';renderGround()">Waiting · ' + waits.length + (silent ? ' (' + silent + ')' : '') + '</button>'
     + '<button class="tab' + (gTab==='standing'?' on':'') + '" onclick="gTab=\'standing\';renderGround()">Standing · ' + ripe + '</button>';
 
@@ -1243,13 +1306,157 @@ function renderGround(){
     : '<div class="card"><div class="h" style="margin:0">Nothing waiting. Ground is clear.</div></div>';
 
   $('#g-body').innerHTML = gTab === 'stuck' ? stuckList()
+                        : gTab === 'owed' ? owedList()
                         : gTab === 'waiting' ? waitingList(waits)
                         : standingList(all);
   $('#g-foot').textContent = gTab === 'stuck'
     ? 'One-off tasks, oldest first.'
+    : gTab === 'owed'
+    ? 'The next move is yours. Nothing here without a person and a date.'
     : gTab === 'waiting'
     ? 'The next move is theirs. After ' + CHASE_DAYS + ' days of silence it becomes yours again.'
     : 'Items ripen rather than becoming overdue.';
+}
+
+/* ---------- OWED — deliverables someone is expecting from you ----------
+   The mirror of Waiting: there the next move is theirs, here it is yours.
+   All three of what / who / when are required. Without a person and a date it
+   is a to-do list, and to-do lists are self-imposed. */
+var OWED_SOON = 3;
+function owedOpen(){ return (S.owed||[]).filter(o => !o.done); }
+function findOwed(id){ return (S.owed||[]).filter(o => o.id === id)[0]; }
+function owedDays(o){
+  if(!o.due) return null;
+  const p = o.due.split('-');
+  return daysUntil(new Date(+p[0], +p[1]-1, +p[2]));
+}
+function dueText(n){
+  if(n === null) return '';
+  if(n === 0) return 'today';
+  if(n < 0) return (-n) + 'd over';
+  return 'in ' + n + 'd';
+}
+function rkShort(k){ return k === 'shown' ? 'shown' : k === 'shot' ? 'shot' : 'written'; }
+function monthName(m){ const p = (m||'').split('-'); return p.length === 2 ? MON[+p[1]-1] + ' ' + p[0] : m; }
+
+function owedList(){
+  const open = owedOpen().slice().sort((a,b) => (a.due||'').localeCompare(b.due||''));
+  let out = '<div class="row" style="margin-bottom:14px">'
+    + '<button class="btn" style="flex:1" onclick="editOwed()">Add something owed</button></div>';
+
+  if(!open.length){
+    out += '<div class="card"><div class="h" style="margin:0">Nobody is expecting anything from you right now. '
+        + 'Add one only when a person and a date both exist.</div></div>';
+  }else{
+    out += '<div class="zone">Owed &nbsp;·&nbsp; soonest first</div>';
+    open.forEach(o => {
+      const n = owedDays(o), near = n !== null && n <= OWED_SOON;
+      out += '<button class="g" onclick="openOwed(\'' + o.id + '\')">'
+        + '<div class="pip ' + (near ? 'ripe' : 'fresh') + '"></div>'
+        + '<div class="nm"><b>' + esc(o.what) + '</b><small>' + esc(o.who) + '</small></div>'
+        + '<div class="ago"><b>' + dueText(n) + '</b>' + esc((o.due||'').slice(5)) + '</div></button>';
+    });
+  }
+
+  /* the show of work — one list, newest first. Counts only go up: this is a
+     record of what went out, never a rate and never a gap. */
+  const rel = (S.releases||[]).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  out += '<div class="zone" style="margin-top:26px">Show of work &nbsp;·&nbsp; '
+       + rel.length + ' put out</div>';
+  if(!rel.length){
+    out += '<div class="card"><div class="h" style="margin:0">Nothing recorded yet. '
+        + 'Delivering something owed lands it here, as does Put out in the weekly review.</div></div>';
+  }else{
+    /* who has and has not received work is the thing one weekly flag cannot show */
+    const per = {};
+    rel.forEach(r => { const w = (r.to||'').trim(); if(w) per[w] = (per[w]||0) + 1; });
+    const names = Object.keys(per).sort((a,b) => per[b] - per[a]);
+    if(names.length){
+      out += '<div class="mini" style="margin:0 0 10px">'
+           + names.map(w => esc(w) + ' · ' + per[w]).join(' &nbsp;·&nbsp; ') + '</div>';
+    }
+    let lastM = '';
+    rel.forEach(r => {
+      const m = (r.date||'').slice(0,7);
+      if(m !== lastM){ lastM = m; out += '<div class="zone">' + esc(monthName(m)) + '</div>'; }
+      out += '<div class="g" style="cursor:default"><div class="pip fresh"></div>'
+        + '<div class="nm"><b>' + esc(r.title) + '</b><small>'
+        + esc(r.to ? 'to ' + r.to : (r.note||'')) + '</small></div>'
+        + '<div class="ago"><b>' + rkShort(r.kind) + '</b>' + esc((r.date||'').slice(5)) + '</div></div>';
+    });
+  }
+  return out;
+}
+
+function editOwed(){
+  $('#sheet').innerHTML = '<h3>Something owed</h3>'
+    + '<div class="hh">All three are required. A deliverable with nobody expecting it and no date is a to-do list.</div>'
+    + '<input class="inp" id="ow-what" placeholder="what they are expecting">'
+    + '<input class="inp" id="ow-who" placeholder="who is expecting it" style="margin-top:10px">'
+    + '<input class="inp" id="ow-due" type="date" style="margin-top:10px">'
+    + '<div class="row" style="margin-top:16px">'
+    + '<button class="btn gold" style="flex:1;padding:13px" onclick="addOwed()">Add</button>'
+    + '<button class="btn" onclick="closeMod()">Cancel</button></div>';
+  $('#mod').classList.add('on');
+}
+function addOwed(){
+  const what = ($('#ow-what').value||'').trim();
+  const who  = ($('#ow-who').value||'').trim();
+  const due  = ($('#ow-due').value||'').trim();
+  if(!what){ toast('What is it?'); return; }
+  if(!who){  toast('Who is expecting it?'); return; }
+  if(!due){  toast('When do they expect it?'); return; }
+  S.owed.push({id:'o' + Date.now().toString(36), what:what, who:who, due:due,
+               added:todayKey(), done:false, doneAt:null});
+  save(); closeMod(); gTab = 'owed'; renderGround(); renderToday(); toast('Owed to ' + who);
+}
+function openOwed(id){
+  const o = findOwed(id); if(!o) return;
+  $('#sheet').innerHTML = '<h3>' + esc(o.what) + '</h3>'
+    + '<div class="hh">' + esc(o.who) + ' &middot; ' + dueText(owedDays(o)) + '</div>'
+    + '<input class="inp" id="ow-what2" value="' + esc(o.what) + '">'
+    + '<input class="inp" id="ow-who2" value="' + esc(o.who) + '" style="margin-top:10px">'
+    + '<input class="inp" id="ow-due2" type="date" value="' + esc(o.due) + '" style="margin-top:10px">'
+    + '<div class="hh" style="margin-top:14px">Handed over as</div>'
+    + '<div class="tog" id="ow-kind">' + RKINDS.map((k,i) =>
+        '<button class="tg' + (i===0?' on':'') + '" data-k="' + k.id + '" onclick="pickZone(this)">'
+        + k.t + '</button>').join('') + '</div>'
+    + '<div class="row" style="margin-top:16px">'
+    + '<button class="btn gold" style="flex:1;padding:13px" onclick="deliverOwed(\'' + o.id + '\')">Delivered</button></div>'
+    + '<div class="row" style="margin-top:10px">'
+    + '<button class="btn" style="flex:1" onclick="saveOwed(\'' + o.id + '\')">Save</button>'
+    + '<button class="btn" onclick="delOwed(\'' + o.id + '\')">Remove</button></div>';
+  $('#mod').classList.add('on');
+}
+function readOwedForm(o){
+  const a = $('#ow-what2'), b = $('#ow-who2'), c = $('#ow-due2');
+  if(a && (a.value||'').trim()) o.what = a.value.trim();
+  if(b && (b.value||'').trim()) o.who  = b.value.trim();
+  if(c && (c.value||'').trim()) o.due  = c.value.trim();
+}
+function saveOwed(id){
+  const o = findOwed(id); if(!o) return;
+  readOwedForm(o); save(); closeMod(); renderGround(); renderToday(); toast('Saved');
+}
+function delOwed(id){
+  S.owed = S.owed.filter(o => o.id !== id);
+  save(); closeMod(); renderGround(); renderToday(); toast('Removed');
+}
+function deliverOwed(id){
+  const o = findOwed(id); if(!o) return;
+  readOwedForm(o);
+  const on = $('#ow-kind') ? $('#ow-kind').querySelector('.tg.on') : null;
+  o.done = true; o.doneAt = todayKey();
+  /* one record of the work, not two: this lands in the same releases list that
+     Put out writes to, so the show of work stays a single list */
+  S.releases.push({id:'r' + Date.now().toString(36), title:o.what,
+                   kind: on ? on.dataset.k : 'written', to:o.who,
+                   note:'to ' + o.who, date:todayKey()});
+  /* handing finished work to a person is the weekly delivery — no reason to
+     make it get ticked twice */
+  week().delivery = true;
+  save(); closeMod(); renderGround(); renderToday(); renderRev();
+  toast('Delivered to ' + o.who);
 }
 
 function waitingList(waits){
@@ -1523,6 +1730,7 @@ function openGround(id){
     + '<div class="mini">A specific time and place. Roughly doubles follow-through.</div>'
     + '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:14px">Every how many days</div>'
     + '<input class="inp" id="gn-days" type="number" min="1" max="1095" value="' + g.days + '">'
+    + (g.list === 'people' ? nameList(g.id) : '')
     + '<div class="row" style="margin-top:16px">'
     + '<button class="btn gold" style="flex:1;padding:13px" onclick="markDone(\'' + g.id + '\')">Mark done today</button></div>'
     + '<div class="row">'
@@ -1553,6 +1761,65 @@ function delGround(id){
   S.ground = S.ground.filter(g => g.id !== id);
   save(); closeMod(); renderGround(); toast('Removed');
 }
+/* ---------- THE NAMES LIST ----------
+   Not a screen. It hangs off one standing item, because the item already
+   says “open the list” and there was no list. Longest since contact first,
+   the way Ground already sorts. Nothing here is scored: no streaks, no
+   birthdays, no relationship health. One button, and the button is a message.
+   Messaging is the standing item, so it logs that too — and hands the person
+   to Waiting, since the next move is now theirs. */
+function peopleSorted(){
+  return S.people.slice().sort((a,b) => {
+    const da = daysSince(a.last), db = daysSince(b.last);
+    if(da === null && db === null) return a.name < b.name ? -1 : 1;
+    if(da === null) return -1;                 // never messaged sits at the top
+    if(db === null) return 1;
+    return db - da;
+  });
+}
+function nameList(gid){
+  const rows = peopleSorted().map(p => {
+    const d = daysSince(p.last);
+    return '<div class="pr"><div class="nm"><b>' + esc(p.name) + '</b><small>'
+      + (d === null ? 'never' : d === 0 ? 'today' : d + ' days ago') + '</small></div>'
+      + '<button class="btn" onclick="messaged(\'' + p.id + '\',\'' + gid + '\')">Messaged</button>'
+      + '<button class="x" onclick="delPerson(\'' + p.id + '\',\'' + gid + '\')" aria-label="Remove">&times;</button></div>';
+  }).join('');
+  return '<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:18px">The list &nbsp;&middot;&nbsp; longest since contact first</div>'
+    + (rows || '<div class="mini">No names yet. Add the people you actually want to keep up with.</div>')
+    + '<div class="row" style="margin-top:9px">'
+    + '<input class="inp" id="pp-new" placeholder="add a name" style="flex:1;width:auto;margin:0" autocomplete="off">'
+    + '<button class="btn" onclick="addPerson(\'' + gid + '\')">Add</button></div>';
+}
+function addPerson(gid){
+  const el = $('#pp-new'), nm = ((el && el.value) || '').trim();
+  if(!nm){ toast('Needs a name'); return; }
+  if(S.people.filter(p => p.name.toLowerCase() === nm.toLowerCase()).length){ toast('Already on the list'); return; }
+  S.people.push({id:'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+                 name:nm, last:null, added:todayKey()});
+  const g = findG(gid); if(g) readGroundForm(g);
+  save(); openGround(gid); toast('Added');
+}
+function delPerson(pid, gid){
+  S.people = S.people.filter(p => p.id !== pid);
+  const g = findG(gid); if(g) readGroundForm(g);
+  save(); openGround(gid); toast('Removed');
+}
+function messaged(pid, gid){
+  const p = S.people.filter(x => x.id === pid)[0]; if(!p) return;
+  p.last = todayKey();
+  // the ball is theirs — one open entry per person, the clock resets on a re-send
+  const open = S.stuck.filter(s => !s.done && s.pid === pid)[0];
+  if(open){ open.who = p.name; open.since = todayKey(); }
+  else S.stuck.push({id:'s' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    name:'Reply from ' + p.name, next:'Message ' + p.name + ' again', when:'', size:'s',
+    added:todayKey(), done:false, doneAt:null, who:p.name, since:todayKey(), pid:pid});
+  // messaging someone is the standing item, so it counts as done
+  const g = findG(gid);
+  if(g){ readGroundForm(g); g.last = todayKey(); g.hist = (g.hist||[]).concat([g.last]).slice(-40); }
+  save(); closeMod(); renderGround(); toast('Messaged ' + p.name);
+}
+
 function editGround(){
   $('#sheet').innerHTML = '<h3>Add a standing item</h3>'
     + '<div class="hh">Something that recurs without a fixed date. Appointments go in your calendar, not here.</div>'
@@ -1871,9 +2138,7 @@ function doImport(ev){
     try{
       const p = JSON.parse(r.result);
       if(!p || typeof p !== 'object' || !p.days) throw new Error('bad file');
-      S = Object.assign(blankState(), p);
-      S.cfg = Object.assign(blankState().cfg, p.cfg||{});
-      S.cfg.hz = Object.assign({}, DEFAULT_HZ, (p.cfg&&p.cfg.hz)||{});
+      S = normalize(p);
       save(); renderAll(); toast('Imported');
     }catch(e){ toast('Could not read that file'); }
   };
@@ -1918,6 +2183,11 @@ function renderAll(){
 }
 
 /* boot */
+if(ADOPTED){
+  S.meta.adoptedFrom = OLD_KEY; S.meta.adoptedOn = todayKey();
+  save();
+  setTimeout(() => toast('Table now has its own storage. The old copy was left untouched.'), 700);
+}
 renderAll();
 if(!S.cfg.setup) firstRun();
 // day rollover while the app sits open on the home screen
