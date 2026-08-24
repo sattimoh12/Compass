@@ -43,6 +43,7 @@ button{background:none;border:none;padding:0;cursor:pointer}
 .dots{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
 .dot.y{background:var(--gold)}
+.dot.y.c{background:var(--green)}
 .dot.n{background:#3a2422}
 
 /* section label */
@@ -260,6 +261,9 @@ nav svg{width:20px;height:20px}
   <div class="floor" id="t-floor"></div>
 
   <div class="mini">Four floor items. Everything else goes on the Log tab and is reviewed on the 1st.</div>
+
+  <div class="sec">Pieces <span id="t-piecect"></span></div>
+  <div id="t-pieces"></div>
   <div class="row"><button class="btn" onclick="go('arc')">Captures &amp; backup</button></div>
 </div></div>
 
@@ -400,7 +404,7 @@ var KEY = 'table.v1';
 var OLD_KEY = 'compass.v1';
 var ADOPTED = false;
 var FLOOR = [
-  {id:'write',  t:'Wrote five pages',   d:'Five pages minimum.'},
+  {id:'write',  t:'Moved a piece',      d:'New pages, or a pass on something you slept on.'},
   {id:'read',   t:'Read fifteen pages', d:'Book, magazine, or article.'},
   {id:'direct', t:'Directing: one person, one step', d:'Talked to someone about the work and moved one thing forward. Both required.'},
   {id:'family', t:'Spoke with family',  d:'Call or message.'}
@@ -561,6 +565,7 @@ function blankState(){
           })),
           people: [],
           owed: [],
+          pieces: [],
           stuck: [],
           events: [],
           releases: [],
@@ -580,6 +585,7 @@ function normalize(p){
   if(!Array.isArray(r.ground)) r.ground = blankState().ground;
   if(!Array.isArray(r.stuck)) r.stuck = [];
   if(!Array.isArray(r.owed)) r.owed = [];
+  if(!Array.isArray(r.pieces)) r.pieces = [];
   if(!Array.isArray(r.releases)) r.releases = [];
   if(!Array.isArray(r.events)) r.events = [];
   if(!Array.isArray(r.sources) || !r.sources.length) r.sources = blankState().sources;
@@ -747,7 +753,7 @@ function renderToday(){
   let dots = '';
   for(let i=13;i>=0;i--){
     const kk = keyOf(addDays(now,-i)), r = S.days[kk];
-    const cls = (r && r.floor && r.floor.write) ? 'y' : (i===0 ? '' : (r ? 'n' : ''));
+    const cls = (r && r.floor && r.floor.write) ? (r.cut ? 'y c' : 'y') : (i===0 ? '' : (r ? 'n' : ''));
     dots += '<div class="dot '+cls+'"></div>';
   }
   $('#t-dots').innerHTML = dots;
@@ -790,6 +796,24 @@ function renderToday(){
       : '<div class="card"><div class="h" style="margin:0">Nothing fixed today.</div></div>')
     + '<div class="row"><button class="btn" onclick="editEvent()">Add a one-off</button></div>';
 
+  const pcs = openPieces();
+  $('#t-piecect').textContent = pcs.length ? pcs.length : '';
+  $('#t-pieces').innerHTML = (pcs.length
+    ? pcs.map(x => {
+        const st = passState(x);
+        return '<div class="g" style="cursor:default">'
+          + '<div class="pip ' + (st.closed ? 'ripe' : 'fresh') + '"></div>'
+          + '<div class="nm"><b>' + esc(x.title) + '</b><small>' + st.label + '</small></div>'
+          + '<div class="acts" style="display:flex;gap:6px">'
+          + (st.closed
+              ? '<button class="btn sm" onclick="finishPiece(\'' + x.id + '\')">Finished</button>'
+              : '<button class="btn sm" onclick="logPass(\'' + x.id + '\')">' + st.next + '</button>')
+          + '<button class="btn sm" onclick="delPiece(\'' + x.id + '\')">×</button>'
+          + '</div></div>';
+      }).join('')
+    : '<div class="card"><div class="h" style="margin:0">Nothing open. A piece is anything you are drafting — add one when you start.</div></div>')
+    + '<div class="row"><button class="btn" onclick="addPiece()">Add a piece</button></div>';
+
   // floor
   const doneN = FLOOR.filter(f => d.floor[f.id]).length;
   /* a denominator turns an ordinary day into a visible gap */
@@ -806,6 +830,54 @@ function setExp(){
   d.expAt = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   save(); renderToday();
 }
+/* ---------- PIECES AND PASSES ----------
+   Draft, sleep, cut, sleep, cut, closed. The two states cannot be produced at
+   once, so pass 2 on the same calendar day as pass 1 is refused with no
+   override — sleep is the switch, not a formality. Two is a terminus that comes
+   from a count rather than from feeling finished, which is the point. */
+function findPiece(id){ return (S.pieces||[]).filter(x => x.id === id)[0]; }
+function openPieces(){ return (S.pieces||[]).filter(x => !x.finishedAt); }
+function passState(x){
+  if(!x.p1) return {label:'drafting', next:'Log a pass', can:true};
+  if(!x.p2){
+    if(x.p1 === todayKey()) return {label:'pass 1 today — pass 2 tomorrow', next:'Pass 2', can:false};
+    return {label:'pass 1 on ' + x.p1, next:'Pass 2', can:true};
+  }
+  return {label:'two passes — closed', next:null, can:false, closed:true};
+}
+function addPiece(){
+  const t = (prompt('What is the piece?')||'').trim();
+  if(!t) return;
+  S.pieces.push({id:'pc' + Date.now().toString(36), title:t, added:todayKey(),
+                 p1:null, p2:null, finishedAt:null});
+  save(); renderToday(); toast('Added');
+}
+function logPass(id){
+  const x = findPiece(id); if(!x) return;
+  const st = passState(x);
+  if(st.closed){ toast('Already closed'); return; }
+  if(!st.can){ toast('Pass 1 was today. Pass 2 tomorrow.'); return; }
+  const k = todayKey();
+  if(!x.p1) x.p1 = k; else x.p2 = k;
+  /* a cutting day is a working day: it satisfies the floor on its own, and is
+     recorded separately so the dots and the review can tell the two apart */
+  const d = day(k); d.floor.write = true; d.cut = true;
+  save(); renderToday();
+  toast(x.p2 ? 'Two passes. It is closed.' : 'Pass 1 logged. Sleep. Pass 2 tomorrow.');
+}
+function finishPiece(id){
+  const x = findPiece(id); if(!x) return;
+  x.finishedAt = todayKey();
+  S.releases.push({id:'r' + Date.now().toString(36), title:x.title, kind:'written',
+                   note:'finished', date:todayKey()});
+  save(); renderToday(); renderRev(); toast('Finished · counted');
+}
+function delPiece(id){
+  if(!confirm('Remove this piece? Passes go with it.')) return;
+  S.pieces = S.pieces.filter(x => x.id !== id);
+  save(); renderToday();
+}
+
 function toggleFloor(id){
   const d = day(); d.floor[id] = !d.floor[id];
   save(); renderToday();
@@ -1065,7 +1137,7 @@ function weekForm(){
   const wk = weekKey(new Date()), w = week(wk);
   const stats = rangeStats(addDays(new Date(),-6), new Date());
   return '<div class="stats">'
-    + st(stats.write + '/7', 'days written') + st(stats.full + '/7', 'full floor days')
+    + st(stats.write + '/7', 'days worked') + st(stats.cut, 'cutting days')
     + st(stats.hours.toFixed(0) + 'h', 'creative hours') + st(stats.link.toFixed(0) + 'h', 'linking hours')
     + '</div>'
     + '<div class="card"><h3>Delivery</h3><div class="h">Friday 18:00. One finished thing sent to two or three people.</div>'
@@ -1216,7 +1288,7 @@ function saveYear(yk){
 function st(v, l){ return '<div class="st"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
 
 function rangeStats(from, to){
-  const r = {write:0, full:0, read:0, family:0, direct:0, hours:0, link:0, net:0, projects:[], loveWeeks:0};
+  const r = {write:0, cut:0, full:0, read:0, family:0, direct:0, hours:0, link:0, net:0, projects:[], loveWeeks:0};
   const seen = {};
   let d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
@@ -1225,6 +1297,7 @@ function rangeStats(from, to){
     if(rec){
       const f = rec.floor || {};
       if(f.write) r.write++;
+      if(rec.cut) r.cut++;
       if(f.read) r.read++;
       if(f.family) r.family++;
       if(f.direct) r.direct++;
