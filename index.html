@@ -101,6 +101,13 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.55}
 .hz .k{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
 .hz .b{font-family:var(--serif);font-size:15.5px;line-height:1.6;white-space:pre-wrap;color:var(--ink)}
 .hz .b.d{font-family:var(--sans);font-size:13.5px;color:var(--dim);line-height:1.65}
+.mk{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.45;cursor:pointer}
+.mk:first-of-type{margin-top:12px}
+.mk .tick{flex:0 0 auto;width:15px;color:var(--faint)}
+.mk.on .tick{color:var(--green)}
+.mk .t{flex:1;color:var(--dim)}
+.mk.on .t{color:var(--ink)}
+.mk .yr{flex:0 0 auto;color:var(--faint);font-size:11.5px;font-family:var(--sans)}
 .ro{font-size:11px;color:var(--faint);text-align:center;margin:18px 0 8px;line-height:1.6}
 
 /* lock */
@@ -550,6 +557,9 @@ var DEFAULT_HZ = {
   route: "Written over four years: ~20 short scripts, 2 features.\nDirected: ~10 shorts, 1 feature.\nRoughly two written per one shot.\nMonthly shoot day. Feature shoots at 34 — script and proof of concept ahead of it.\nShoot from the backlog. Material was never the bottleneck.",
   travel:"Three consecutive months somewhere new, every two years.\nA different country every ten years — under consideration, not decided.",
   home:  "A rooted home where I know the people and the community.\nBerlin, pending the visa situation.",
+  by40:  "",
+  by50:  "",
+  by60:  "",
   month: "",
   week:  ""
 };
@@ -566,6 +576,7 @@ function blankState(){
           people: [],
           owed: [],
           pieces: [],
+          marks: [],
           stuck: [],
           events: [],
           releases: [],
@@ -586,6 +597,7 @@ function normalize(p){
   if(!Array.isArray(r.stuck)) r.stuck = [];
   if(!Array.isArray(r.owed)) r.owed = [];
   if(!Array.isArray(r.pieces)) r.pieces = [];
+  if(!Array.isArray(r.marks)) r.marks = [];
   if(!Array.isArray(r.releases)) r.releases = [];
   if(!Array.isArray(r.events)) r.events = [];
   if(!Array.isArray(r.sources) || !r.sources.length) r.sources = blankState().sources;
@@ -727,6 +739,9 @@ function fullDays(mk){
 
 /* ---------- ui helpers ---------- */
 const $ = s => document.querySelector(s);
+/* Date.now() alone collides: two items created inside the same millisecond get
+   the same id, and anything that deletes or toggles by id then hits both. */
+function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let toastT;
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),1900); }
@@ -845,12 +860,78 @@ function passState(x){
   }
   return {label:'two passes — closed', next:null, can:false, closed:true};
 }
+/* ---------- LARGE FINISHES UNDER A HORIZON ---------- */
+var HZKEYS = [{id:'by40',t:'By 40'},{id:'by50',t:'By 50'},{id:'by60',t:'By 60'},{id:'none',t:'Not yet'}];
+function hzButtons(sel, idPrefix){
+  return '<div class="tog" style="margin-top:12px" id="' + idPrefix + '">'
+    + HZKEYS.map(k => '<button class="tg' + (k.id === sel ? ' on' : '') + '" data-h="' + k.id
+        + '" onclick="pickZone(this)">' + k.t + '</button>').join('') + '</div>';
+}
+function addMark(hz){
+  $('#sheet').innerHTML = '<h3>Goals</h3>'
+    + '<div class="hh">One per line — write as many as you have. Placing them is a separate decision, and “Not yet” is a real answer.</div>'
+    + '<textarea class="inp" id="mk-t" style="min-height:120px" placeholder="build a cafe\na fifth feature that is actually good\nan art project made with her"></textarea>'
+    + hzButtons(hz, 'mk-h')
+    + '<div class="row" style="margin-top:16px">'
+    + '<button class="btn gold" style="flex:1;padding:13px" onclick="saveMark()">Add</button>'
+    + '<button class="btn" onclick="closeMod()">Cancel</button></div>';
+  $('#mod').classList.add('on');
+  setTimeout(() => { const i = $('#mk-t'); if(i) i.focus(); }, 50);
+}
+function saveMark(){
+  const lines = ($('#mk-t').value||'').split('\n').map(x => x.trim()).filter(Boolean);
+  if(!lines.length){ toast('Nothing to add'); return; }
+  const on = $('#mk-h').querySelector('.tg.on');
+  const hz = on ? on.dataset.h : 'none';
+  lines.forEach(t => S.marks.push({id:uid('mk'), hz:hz, t:t, added:todayKey(), doneAt:null}));
+  save(); closeMod(); renderHz();
+  toast(lines.length === 1 ? 'Added' : lines.length + ' added');
+}
+function moveMark(id, hz){
+  const m = (S.marks||[]).filter(x => x.id === id)[0]; if(!m) return;
+  m.hz = hz; save(); renderHz(); editMarks(hz);
+}
+function toggleMark(id){
+  const m = (S.marks||[]).filter(x => x.id === id)[0]; if(!m) return;
+  m.doneAt = m.doneAt ? null : todayKey();
+  save(); renderHz();
+  if(m.doneAt) toast('Counted');
+}
+function editMarks(hz){
+  const mine = (S.marks||[]).filter(m => m.hz === hz);
+  $('#sheet').innerHTML = '<h3>Goals</h3>'
+    + '<div class="hh">Tap one on the horizon to mark it done. Move or remove here.</div>'
+    + (mine.length ? mine.map(m => '<div style="border-top:1px solid var(--line);padding:10px 0">'
+        + '<div style="font-size:14px;color:var(--ink);line-height:1.4">' + esc(m.t) + '</div>'
+        + '<div class="row" style="margin-top:7px;align-items:center">'
+        + HZKEYS.filter(k => k.id !== hz).map(k => '<button class="btn sm" onclick="moveMark(\''
+            + m.id + '\',\'' + k.id + '\')">→ ' + k.t + '</button>').join('')
+        + '<button class="btn sm" style="color:var(--red)" onclick="delMark(\'' + m.id + '\')">Remove</button>'
+        + '</div></div>').join('') : '<div class="hh">Nothing here yet.</div>')
+    + '<div class="row" style="margin-top:16px"><button class="btn" onclick="closeMod()">Done</button></div>';
+  $('#mod').classList.add('on');
+}
+function delMark(id){
+  S.marks = S.marks.filter(m => m.id !== id);
+  save(); renderHz(); closeMod();
+}
+
 function addPiece(){
-  const t = (prompt('What is the piece?')||'').trim();
-  if(!t) return;
-  S.pieces.push({id:'pc' + Date.now().toString(36), title:t, added:todayKey(),
+  $('#sheet').innerHTML = '<h3>A piece</h3>'
+    + '<div class="hh">Anything you are drafting. Draft, sleep, pass, sleep, pass, closed.</div>'
+    + '<input class="inp" id="pc-t" placeholder="what it is">'
+    + '<div class="row" style="margin-top:16px">'
+    + '<button class="btn gold" style="flex:1;padding:13px" onclick="savePiece()">Add</button>'
+    + '<button class="btn" onclick="closeMod()">Cancel</button></div>';
+  $('#mod').classList.add('on');
+  setTimeout(() => { const i = $('#pc-t'); if(i) i.focus(); }, 50);
+}
+function savePiece(){
+  const t = ($('#pc-t').value||'').trim();
+  if(!t){ toast('Needs a name'); return; }
+  S.pieces.push({id:uid('pc'), title:t, added:todayKey(),
                  p1:null, p2:null, finishedAt:null});
-  save(); renderToday(); toast('Added');
+  save(); closeMod(); renderToday(); toast('Added');
 }
 function logPass(id){
   const x = findPiece(id); if(!x) return;
@@ -868,7 +949,7 @@ function logPass(id){
 function finishPiece(id){
   const x = findPiece(id); if(!x) return;
   x.finishedAt = todayKey();
-  S.releases.push({id:'r' + Date.now().toString(36), title:x.title, kind:'written',
+  S.releases.push({id:uid('r'), title:x.title, kind:'written',
                    note:'finished', date:todayKey()});
   save(); renderToday(); renderRev(); toast('Finished · counted');
 }
@@ -927,7 +1008,7 @@ function saveEvent(id){
   const rec = {title:t, date:$('#ev-d').value || todayKey(), time:$('#ev-tm').value || '09:00',
                who:($('#ev-w').value||'').trim(), note:''};
   if(id){ Object.assign(S.events.filter(x => x.id === id)[0] || {}, rec); }
-  else { S.events.push(Object.assign({id:'e' + Date.now().toString(36)}, rec)); }
+  else { S.events.push(Object.assign({id:uid('e')}, rec)); }
   save(); closeMod(); renderAll(); toast('Saved');
 }
 function delEvent(id){ S.events = S.events.filter(e => e.id !== id); save(); closeMod(); renderAll(); toast('Removed'); }
@@ -1080,6 +1161,16 @@ function renderHz(){
       + (S.years[aud.y].audNote ? '\n' + S.years[aud.y].audNote : ''), true);
   }
   out += box('The route', h.route, true);
+  /* no countdown against these on purpose. PLAN.md is explicit that a date you
+     cannot control should be released rather than compressed against, and a
+     ticking clock to forty is exactly the deadline that would not bind. */
+  out += decade('by40', 'By 40', h.by40);
+  out += decade('by50', 'By 50', h.by50);
+  out += decade('by60', 'By 60', h.by60);
+  /* written down but not yet placed. Deciding which decade a thing belongs to is
+     its own act — this lets the writing down happen first. */
+  if((S.marks||[]).some(m => m.hz === 'none'))
+    out += decade('none', 'Not placed yet', 'Move each one to a decade when you know.');
   out += box('This month', (S.cfg.project ? 'Active project: '+S.cfg.project+'\n' : '') + (h.month || 'Set at the monthly review.'), true);
   out += box('This week', h.week || 'Set at the Sunday review.', true);
   out += box('Love day', w.love ? 'Taken this week.' : 'Not yet taken. One day a week given to art, someone, or being outside.', true);
@@ -1107,6 +1198,25 @@ function renderHz(){
 
   function box(k, body, dim){
     return '<div class="hz"><div class="k">'+k+'</div><div class="b'+(dim?' d':'')+'">'+esc(body)+'</div></div>';
+  }
+  /* the large finishes that stack up under a decade. Done ones first, oldest
+     first, so the box reads as a pile that grows. No ratio, no "3 of 7", no bar:
+     a denominator here would turn a twenty-year horizon into a shortfall. */
+  function decade(key, label, body){
+    const mine = (S.marks||[]).filter(m => m.hz === key);
+    const done = mine.filter(m => m.doneAt).sort((a,b) => a.doneAt < b.doneAt ? -1 : 1);
+    const open = mine.filter(m => !m.doneAt);
+    const row = m => '<div class="mk' + (m.doneAt ? ' on' : '') + '" onclick="toggleMark(\'' + m.id + '\')">'
+      + '<span class="tick">' + (m.doneAt ? '&#10003;' : '&#9675;') + '</span>'
+      + '<span class="t">' + esc(m.t) + '</span>'
+      + '<span class="yr">' + (m.doneAt ? m.doneAt.slice(0,4) : '') + '</span></div>';
+    return '<div class="hz"><div class="k">' + label + '</div>'
+      + '<div class="b d">' + esc(body || 'Set at the yearly review.') + '</div>'
+      + done.map(row).join('') + open.map(row).join('')
+      + '<div class="row" style="margin-top:12px"><button class="btn" style="font-size:12px;padding:6px 11px" '
+      + 'onclick="addMark(\'' + key + '\')">＋ add</button>'
+      + (mine.length ? '<button class="btn" style="font-size:12px;padding:6px 11px" onclick="editMarks(\'' + key + '\')">edit</button>' : '')
+      + '</div></div>';
   }
 }
 
@@ -1273,6 +1383,10 @@ function yearForm(){
     + '<textarea class="inp" id="y-5" placeholder="The route.">' + esc(S.cfg.hz.route) + '</textarea>'
     + '<textarea class="inp" id="y-6" placeholder="Travel.">' + esc(S.cfg.hz.travel) + '</textarea>'
     + '<textarea class="inp" id="y-7" placeholder="Home.">' + esc(S.cfg.hz.home) + '</textarea></div>'
+    + '<div class="card"><h3>The decades</h3><div class="h">Held loosely and revised once a year. No countdown — these steer, they do not fall due.</div>'
+    + '<textarea class="inp" id="y-40" placeholder="By 40.">' + esc(S.cfg.hz.by40) + '</textarea>'
+    + '<textarea class="inp" id="y-50" placeholder="By 50.">' + esc(S.cfg.hz.by50) + '</textarea>'
+    + '<textarea class="inp" id="y-60" placeholder="By 60.">' + esc(S.cfg.hz.by60) + '</textarea></div>'
     + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveYear(\'' + yk + '\')">Close the year</button>';
 }
 function saveYear(yk){
@@ -1283,6 +1397,7 @@ function saveYear(yk){
   y.audNote = $('#y-audnote').value.trim();
   S.cfg.hz.four = $('#y-4').value; S.cfg.hz.route = $('#y-5').value;
   S.cfg.hz.travel = $('#y-6').value; S.cfg.hz.home = $('#y-7').value;
+  S.cfg.hz.by40 = $('#y-40').value; S.cfg.hz.by50 = $('#y-50').value; S.cfg.hz.by60 = $('#y-60').value;
   save(); toast('Year closed'); renderRev();
 }
 function st(v, l){ return '<div class="st"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
@@ -1479,7 +1594,7 @@ function addOwed(){
   if(!what){ toast('What is it?'); return; }
   if(!who){  toast('Who is expecting it?'); return; }
   if(!due){  toast('When do they expect it?'); return; }
-  S.owed.push({id:'o' + Date.now().toString(36), what:what, who:who, due:due,
+  S.owed.push({id:uid('o'), what:what, who:who, due:due,
                added:todayKey(), done:false, doneAt:null});
   save(); closeMod(); gTab = 'owed'; renderGround(); renderToday(); toast('Owed to ' + who);
 }
@@ -1522,7 +1637,7 @@ function deliverOwed(id){
   o.done = true; o.doneAt = todayKey();
   /* one record of the work, not two: this lands in the same releases list that
      Put out writes to, so the show of work stays a single list */
-  S.releases.push({id:'r' + Date.now().toString(36), title:o.what,
+  S.releases.push({id:uid('r'), title:o.what,
                    kind: on ? on.dataset.k : 'written', to:o.who,
                    note:'to ' + o.who, date:todayKey()});
   /* handing finished work to a person is the weekly delivery — no reason to
@@ -2050,7 +2165,7 @@ function saveRelease(){
   const t = ($('#rl-title').value||'').trim();
   if(!t){ toast('Needs a name'); return; }
   const on = $('#rl-kind').querySelector('.tg.on');
-  S.releases.push({id:'r'+Date.now().toString(36), title:t, kind: on ? on.dataset.k : 'written',
+  S.releases.push({id:uid('r'), title:t, kind: on ? on.dataset.k : 'written',
                    note:($('#rl-note').value||'').trim(), date:todayKey()});
   save(); closeMod(); renderRev(); toast('Counted');
 }
@@ -2147,7 +2262,7 @@ function saveSource(id){
     const s = S.sources.filter(x => x.id === id)[0];
     if(s){ s.name = nm; s.url = url; s.group = url ? (grp === 'open' ? 'read' : grp) : grp; s.note = note; }
   }else{
-    S.sources.push({id:'src' + Date.now().toString(36), name:nm, url:url, group:grp, note:note, last:null, hits:0});
+    S.sources.push({id:uid('src'), name:nm, url:url, group:grp, note:note, last:null, hits:0});
   }
   save(); closeMod(); renderSrc(); toast('Saved');
 }
