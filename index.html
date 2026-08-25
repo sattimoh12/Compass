@@ -369,12 +369,14 @@ nav svg{width:20px;height:20px}
   <div id="a-list"></div>
   <div class="sec">Data</div>
   <div class="card">
-    <div class="h">Everything lives on this device only. Export regularly &mdash; a cleared browser is a cleared history.</div>
+    <div class="h">Storage is per app icon and per device, so the Mac, Safari and the Home Screen icon each hold their own copy. Export from one, import into the other &mdash; merge adds what is missing and keeps what is here.</div>
     <div class="row">
       <button class="btn gold" onclick="doExport()">Export backup</button>
-      <button class="btn" onclick="document.getElementById('imp').click()">Import</button>
+      <button class="btn" onclick="impMode='merge';document.getElementById('imp').click()">Import &amp; merge</button>
+      <button class="btn" onclick="impMode='replace';document.getElementById('imp').click()">Replace</button>
     </div>
-    <input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)">
+    <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="doImport(event)">
+    <div class="h" style="margin-top:8px">Merge is the safe one. Replace overwrites everything on this device.</div>
   </div>
 </div></div>
 
@@ -2311,14 +2313,69 @@ function renderArc(){
 function delCap(i){ S.captures.splice(i,1); save(); renderArc(); }
 
 /* ---------- data ---------- */
-function doExport(){
-  const blob = new Blob([JSON.stringify(S,null,2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'table-' + todayKey() + '.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  toast('Exported');
+/* a home-screen web app on iOS ignores <a download> outright, so the file has to
+   go through the share sheet. Without this, Export did nothing at all on the
+   phone — silently, which is the worst way for a backup to fail. */
+function deliver(text, name, mime){
+  try{
+    const f = new File([text], name, {type:mime});
+    if(navigator.canShare && navigator.canShare({files:[f]})){
+      navigator.share({files:[f], title:name}).catch(() => {});
+      return true;
+    }
+  }catch(e){}
+  try{
+    const u = URL.createObjectURL(new Blob([text], {type:mime}));
+    const a = document.createElement('a');
+    a.href = u; a.download = name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(u); }, 4000);
+    return true;
+  }catch(e){ return false; }
 }
+function doExport(){
+  const ok = deliver(JSON.stringify(S,null,2), 'table-' + todayKey() + '.json', 'application/json');
+  toast(ok ? 'Exported' : 'Could not export');
+}
+
+/* Import used to replace outright, which quietly destroyed whatever was on the
+   receiving device. Merge is additive: ids are unioned, a day worked on either
+   device stays worked, and text only fills blanks — nothing here is overwritten. */
+var IDLISTS = ['ground','people','stuck','events','releases','sources','captures','owed','pieces','marks'];
+function mergeState(cur, inc){
+  let added = 0;
+  IDLISTS.forEach(k => {
+    cur[k] = Array.isArray(cur[k]) ? cur[k] : [];
+    const seen = new Set(cur[k].map(x => x && x.id));
+    (inc[k]||[]).forEach(x => {
+      if(x && x.id && !seen.has(x.id)){ seen.add(x.id); cur[k].push(x); added++; }
+    });
+  });
+  ['days','weeks','months','years'].forEach(k => {
+    cur[k] = cur[k] || {};
+    Object.keys(inc[k]||{}).forEach(dk => {
+      const b = inc[k][dk];
+      if(!cur[k][dk]){ cur[k][dk] = b; added++; return; }
+      const a = cur[k][dk];
+      if(b.floor){ a.floor = a.floor||{}; Object.keys(b.floor).forEach(f => { if(b.floor[f]) a.floor[f] = true; }); }
+      ['cut','delivery','love','done'].forEach(f => { if(b[f]) a[f] = true; });
+      if(b.hrs){ a.hrs = a.hrs||{}; Object.keys(b.hrs).forEach(h => { a.hrs[h] = Math.max(a.hrs[h]||0, b.hrs[h]||0); }); }
+      Object.keys(b).forEach(f => {
+        if(f === 'floor' || f === 'hrs' || f === 'amb') return;
+        if(typeof b[f] === 'string' && b[f] && !a[f]) a[f] = b[f];
+      });
+      if(b.amb){ a.amb = a.amb||{}; Object.keys(b.amb).forEach(x => { if(b.amb[x]) a.amb[x] = true; }); }
+    });
+  });
+  cur.cfg = cur.cfg || {}; cur.cfg.hz = cur.cfg.hz || {};
+  const ih = (inc.cfg && inc.cfg.hz) || {};
+  Object.keys(ih).forEach(k => { if(!cur.cfg.hz[k]) cur.cfg.hz[k] = ih[k]; });
+  ['discA','discB','discC','project'].forEach(k => {
+    if(inc.cfg && inc.cfg[k] && !cur.cfg[k]) cur.cfg[k] = inc.cfg[k];
+  });
+  return added;
+}
+var impMode = 'merge';
 function doImport(ev){
   const f = ev.target.files[0]; if(!f) return;
   const r = new FileReader();
@@ -2326,8 +2383,14 @@ function doImport(ev){
     try{
       const p = JSON.parse(r.result);
       if(!p || typeof p !== 'object' || !p.days) throw new Error('bad file');
-      S = normalize(p);
-      save(); renderAll(); toast('Imported');
+      if(impMode === 'replace'){
+        if(!confirm('Replace everything on this device with that file? What is here now is lost.')) return;
+        S = normalize(p); save(); renderAll(); toast('Replaced');
+        return;
+      }
+      const n = mergeState(S, normalize(p));
+      S = normalize(S); save(); renderAll();
+      toast(n ? 'Merged — ' + n + ' added' : 'Merged — nothing new');
     }catch(e){ toast('Could not read that file'); }
   };
   r.readAsText(f);
