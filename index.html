@@ -1437,6 +1437,8 @@ function yearForm(){
    measurement can be taken of, and these are the four numbers the model itself
    names. Same week each year, cold, and never read last year's answers first. */
 var MAPQ = [
+  {k:'mapLinks', t:'Links written', in:true,
+   h:'From the loop library. This is what you deposited, and it is the only one you control directly — but it is also the one that inflates: an arbitrary link is a real edge in a place you will never go, and volume produces those. On its own it proves nothing.'},
   {k:'mapDom',   t:'Domains you can bridge from',
    h:'Count the distinct domains in the loop library. This only moves when you have actually studied something new — reading widely cannot inflate it. Still 1 in twenty years means the map never expanded.'},
   {k:'mapWalls', t:'Walls placed, of 20',
@@ -1454,9 +1456,11 @@ function mapCard(yk, y){
       + past.map(p => p + ': ' + (S.years[p][k] == null ? '—' : S.years[p][k])).join(' &nbsp;&middot;&nbsp; ') + '</div>'
     : '';
   return '<div class="card"><h3>The map</h3>'
-    + '<div class="h">Four numbers, once a year. Only the map accumulates — compass and fog are settings, not things that improve, so this is the only part of the model a long measurement can be taken of.</div>'
+    + '<div class="h">Once a year. Only the map accumulates — compass and fog are settings, not things that improve, so this is the only part of the model a long measurement can be taken of.</div>'
+    + '<div class="h" style="margin-top:8px">The first number is what you <b style="color:var(--dim)">put in</b>. The rest are what you can <b style="color:var(--dim)">still reach</b>, cold. Neither means much alone — many links and few walls placed means the edges went somewhere you never travel.</div>'
     + MAPQ.map(q => '<div style="margin-top:14px">'
-        + '<div class="h" style="color:var(--ink)">' + q.t + '</div>'
+        + '<div class="h" style="color:var(--ink)">' + q.t
+        + '<span style="color:var(--faint);font-weight:400"> &mdash; ' + (q.in ? 'deposited' : 'reachable') + '</span></div>'
         + '<div class="h">' + q.h + '</div>'
         + '<input class="inp" id="y-' + q.k + '" type="number" min="0" value="'
         + (y[q.k] == null ? '' : y[q.k]) + '" placeholder="a number — 0 is a real answer">'
