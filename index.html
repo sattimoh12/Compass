@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Table">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0c0c0e">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230c0c0e'/%3E%3Ccircle cx='90' cy='90' r='54' fill='none' stroke='%23c9a44c' stroke-width='4'/%3E%3Cpath d='M90 42 L102 90 L90 138 L78 90 Z' fill='%23c9a44c'/%3E%3C/svg%3E">
 <title>Table</title>
@@ -105,8 +106,10 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.55}
 .mk:first-of-type{margin-top:12px}
 .mk .tick{flex:0 0 auto;width:15px;color:var(--faint)}
 .mk.on .tick{color:var(--green)}
-.mk .t{flex:1;color:var(--dim)}
+.mk .t{flex:1;color:var(--dim);min-width:0}
 .mk.on .t{color:var(--ink)}
+.mk .t small{display:block;color:var(--faint);font-size:12px;margin-top:2px;line-height:1.4}
+.mk .tick{cursor:pointer;padding:2px 4px;margin:-2px -4px}
 .mk .yr{flex:0 0 auto;color:var(--faint);font-size:11.5px;font-family:var(--sans)}
 .ro{font-size:11px;color:var(--faint);text-align:center;margin:18px 0 8px;line-height:1.6}
 
@@ -377,6 +380,7 @@ nav svg{width:20px;height:20px}
     </div>
     <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="doImport(event)">
     <div class="h" style="margin-top:8px">Merge is the safe one. Replace overwrites everything on this device.</div>
+    <div class="h" style="margin-top:10px;color:var(--faint)">Build <b id="d-build" style="color:var(--dim)"></b> &mdash; if this is not today's date after an update, the phone is still showing an old copy.</div>
   </div>
 </div></div>
 
@@ -891,13 +895,49 @@ function saveMark(){
 }
 function moveMark(id, hz){
   const m = (S.marks||[]).filter(x => x.id === id)[0]; if(!m) return;
-  m.hz = hz; save(); renderHz(); editMarks(hz);
+  m.hz = hz; save(); renderHz(); openMark(id);
 }
-function toggleMark(id){
+function toggleMark(id, fromSheet){
   const m = (S.marks||[]).filter(x => x.id === id)[0]; if(!m) return;
+  if(fromSheet){
+    const t = $('#mk-e-t'); if(t && t.value.trim()) m.t = t.value.trim();
+    const n = $('#mk-e-n'); if(n) m.next = n.value.trim();
+    const o = $('#mk-e-note'); if(o) m.note = o.value.trim();
+    closeMod();
+  }
   m.doneAt = m.doneAt ? null : todayKey();
   save(); renderHz();
   if(m.doneAt) toast('Counted');
+}
+function openMark(id){
+  const m = (S.marks||[]).filter(x => x.id === id)[0]; if(!m) return;
+  $('#sheet').innerHTML = '<h3>' + esc(m.t) + '</h3>'
+    + '<div class="hh">' + (m.doneAt ? 'Done ' + m.doneAt + '.' : 'Not yet.') + '</div>'
+    + '<input class="inp" id="mk-e-t" value="' + esc(m.t) + '" placeholder="what it is">'
+    + '<div class="hh" style="margin-top:14px">The next physical step</div>'
+    + '<input class="inp" id="mk-e-n" value="' + esc(m.next||'') + '" placeholder="the smallest thing that moves it — a call, a visit, an email">'
+    + '<div class="hh" style="margin-top:14px">Everything else</div>'
+    + '<textarea class="inp" id="mk-e-note" style="min-height:120px" placeholder="what it would take, what is in the way, what you have worked out so far">' + esc(m.note||'') + '</textarea>'
+    + hzButtons(m.hz, 'mk-e-h')
+    + '<div class="row" style="margin-top:16px">'
+    + '<button class="btn gold" style="flex:1;padding:13px" onclick="saveMarkEdit(\'' + m.id + '\')">Save</button>'
+    + '<button class="btn" onclick="closeMod()">Cancel</button></div>'
+    + '<div class="row" style="margin-top:10px">'
+    + '<button class="btn" style="flex:1" onclick="toggleMark(\'' + m.id + '\',true)">'
+    + (m.doneAt ? 'Not done after all' : 'Mark it done') + '</button>'
+    + '<button class="btn" style="color:var(--red)" onclick="delMark(\'' + m.id + '\')">Remove</button></div>';
+  $('#mod').classList.add('on');
+}
+function saveMarkEdit(id){
+  const m = (S.marks||[]).filter(x => x.id === id)[0]; if(!m) return;
+  const t = ($('#mk-e-t').value||'').trim();
+  if(!t){ toast('Needs a name'); return; }
+  m.t = t;
+  m.next = ($('#mk-e-n').value||'').trim();
+  m.note = ($('#mk-e-note').value||'').trim();
+  const on = $('#mk-e-h').querySelector('.tg.on');
+  if(on) m.hz = on.dataset.h;
+  save(); closeMod(); renderHz(); toast('Saved');
 }
 function editMarks(hz){
   const mine = (S.marks||[]).filter(m => m.hz === hz);
@@ -1208,17 +1248,17 @@ function renderHz(){
     const mine = (S.marks||[]).filter(m => m.hz === key);
     const done = mine.filter(m => m.doneAt).sort((a,b) => a.doneAt < b.doneAt ? -1 : 1);
     const open = mine.filter(m => !m.doneAt);
-    const row = m => '<div class="mk' + (m.doneAt ? ' on' : '') + '" onclick="toggleMark(\'' + m.id + '\')">'
-      + '<span class="tick">' + (m.doneAt ? '&#10003;' : '&#9675;') + '</span>'
-      + '<span class="t">' + esc(m.t) + '</span>'
+    const row = m => '<div class="mk' + (m.doneAt ? ' on' : '') + '">'
+      + '<span class="tick" onclick="toggleMark(\'' + m.id + '\')">' + (m.doneAt ? '&#10003;' : '&#9675;') + '</span>'
+      + '<span class="t" onclick="openMark(\'' + m.id + '\')">' + esc(m.t)
+      + (m.next ? '<small>&rarr; ' + esc(m.next) + '</small>' : '')
+      + '</span>'
       + '<span class="yr">' + (m.doneAt ? m.doneAt.slice(0,4) : '') + '</span></div>';
     return '<div class="hz"><div class="k">' + label + '</div>'
       + '<div class="b d">' + esc(body || 'Set at the yearly review.') + '</div>'
       + done.map(row).join('') + open.map(row).join('')
       + '<div class="row" style="margin-top:12px"><button class="btn" style="font-size:12px;padding:6px 11px" '
-      + 'onclick="addMark(\'' + key + '\')">＋ add</button>'
-      + (mine.length ? '<button class="btn" style="font-size:12px;padding:6px 11px" onclick="editMarks(\'' + key + '\')">edit</button>' : '')
-      + '</div></div>';
+      + 'onclick="addMark(\'' + key + '\')">＋ add</button></div></div>';
   }
 }
 
@@ -2431,6 +2471,15 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
 function renderAll(){
   try{ renderToday(); renderDay(); renderLog(); renderGround(); renderSrc(); renderHz(); renderRev(); renderArc(); }
   catch(e){ console.error('render error', e); }
+}
+
+/* a home-screen app on iOS can pin a page indefinitely — swiping it away is not
+   enough. Network-first service worker: every launch with signal fetches fresh
+   and falls back to the cache only when offline. */
+var BUILD = '2026-08-25';
+if($('#d-build')) $('#d-build').textContent = BUILD;
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 /* boot */
