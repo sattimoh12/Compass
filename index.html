@@ -351,8 +351,8 @@ nav svg{width:20px;height:20px}
 
 <!-- ============ HORIZON ============ -->
 <div class="view" id="v-hz"><div class="wrap">
-  <div class="hd"><h1>Horizon</h1><div class="sub">Read only</div></div>
-  <div class="datebar">Read-only. Changes at the monthly and yearly reviews.</div>
+  <div class="hd"><h1>Horizon</h1><div class="sub">The long view</div></div>
+  <div class="datebar">Goals are editable here. The prose blocks change at the monthly and yearly reviews.</div>
   <div id="hz-body"></div>
   <div class="ro">Editable only inside the monthly and yearly reviews.</div>
 </div></div>
@@ -564,7 +564,9 @@ var DEFAULT_HZ = {
   travel:"Three consecutive months somewhere new, every two years.\nA different country every ten years — under consideration, not decided.",
   home:  "A rooted home where I know the people and the community.\nBerlin, pending the visa situation.",
   by40:  "",
+  by45:  "",
   by50:  "",
+  by55:  "",
   by60:  "",
   month: "",
   week:  ""
@@ -867,7 +869,8 @@ function passState(x){
   return {label:'two passes — closed', next:null, can:false, closed:true};
 }
 /* ---------- LARGE FINISHES UNDER A HORIZON ---------- */
-var HZKEYS = [{id:'by40',t:'By 40'},{id:'by50',t:'By 50'},{id:'by60',t:'By 60'},{id:'none',t:'Not yet'}];
+var HZKEYS = [{id:'four',t:'By 35'},{id:'by40',t:'By 40'},{id:'by45',t:'By 45'},
+              {id:'by50',t:'By 50'},{id:'by55',t:'By 55'},{id:'by60',t:'By 60'},{id:'none',t:'Not yet'}];
 function hzButtons(sel, idPrefix){
   return '<div class="tog" style="margin-top:12px" id="' + idPrefix + '">'
     + HZKEYS.map(k => '<button class="tg' + (k.id === sel ? ' on' : '') + '" data-h="' + k.id
@@ -938,20 +941,6 @@ function saveMarkEdit(id){
   const on = $('#mk-e-h').querySelector('.tg.on');
   if(on) m.hz = on.dataset.h;
   save(); closeMod(); renderHz(); toast('Saved');
-}
-function editMarks(hz){
-  const mine = (S.marks||[]).filter(m => m.hz === hz);
-  $('#sheet').innerHTML = '<h3>Goals</h3>'
-    + '<div class="hh">Tap one on the horizon to mark it done. Move or remove here.</div>'
-    + (mine.length ? mine.map(m => '<div style="border-top:1px solid var(--line);padding:10px 0">'
-        + '<div style="font-size:14px;color:var(--ink);line-height:1.4">' + esc(m.t) + '</div>'
-        + '<div class="row" style="margin-top:7px;align-items:center">'
-        + HZKEYS.filter(k => k.id !== hz).map(k => '<button class="btn sm" onclick="moveMark(\''
-            + m.id + '\',\'' + k.id + '\')">→ ' + k.t + '</button>').join('')
-        + '<button class="btn sm" style="color:var(--red)" onclick="delMark(\'' + m.id + '\')">Remove</button>'
-        + '</div></div>').join('') : '<div class="hh">Nothing here yet.</div>')
-    + '<div class="row" style="margin-top:16px"><button class="btn" onclick="closeMod()">Done</button></div>';
-  $('#mod').classList.add('on');
 }
 function delMark(id){
   S.marks = S.marks.filter(m => m.id !== id);
@@ -1189,7 +1178,7 @@ function renderHz(){
   const nextSun = nextUnlock('week');
 
   let out = '';
-  out += box('The four years', h.four, false);
+  out += decade('four', 'By 35 — the four years', h.four, false);
   const rc = releaseCounts();
   if(rc.written + rc.shot + rc.shown > 0){
     out += box('Put out so far', rc.written + ' written · ' + rc.shot + ' shot · ' + rc.shown + ' shown'
@@ -1207,7 +1196,9 @@ function renderHz(){
      cannot control should be released rather than compressed against, and a
      ticking clock to forty is exactly the deadline that would not bind. */
   out += decade('by40', 'By 40', h.by40);
+  out += decade('by45', 'By 45', h.by45);
   out += decade('by50', 'By 50', h.by50);
+  out += decade('by55', 'By 55', h.by55);
   out += decade('by60', 'By 60', h.by60);
   /* written down but not yet placed. Deciding which decade a thing belongs to is
      its own act — this lets the writing down happen first. */
@@ -1244,7 +1235,7 @@ function renderHz(){
   /* the large finishes that stack up under a decade. Done ones first, oldest
      first, so the box reads as a pile that grows. No ratio, no "3 of 7", no bar:
      a denominator here would turn a twenty-year horizon into a shortfall. */
-  function decade(key, label, body){
+  function decade(key, label, body, dim){
     const mine = (S.marks||[]).filter(m => m.hz === key);
     const done = mine.filter(m => m.doneAt).sort((a,b) => a.doneAt < b.doneAt ? -1 : 1);
     const open = mine.filter(m => !m.doneAt);
@@ -1255,8 +1246,9 @@ function renderHz(){
       + '</span>'
       + '<span class="yr">' + (m.doneAt ? m.doneAt.slice(0,4) : '') + '</span></div>';
     return '<div class="hz"><div class="k">' + label + '</div>'
-      + '<div class="b d">' + esc(body || 'Set at the yearly review.') + '</div>'
+      + '<div class="b' + (dim === false ? '' : ' d') + '">' + esc(body || 'Set at the yearly review.') + '</div>'
       + done.map(row).join('') + open.map(row).join('')
+      + (mine.length ? '<div class="hh" style="margin-top:9px;font-size:11.5px">Tap a goal to open it — next step, notes, move, remove.</div>' : '')
       + '<div class="row" style="margin-top:12px"><button class="btn" style="font-size:12px;padding:6px 11px" '
       + 'onclick="addMark(\'' + key + '\')">＋ add</button></div></div>';
   }
@@ -1425,9 +1417,11 @@ function yearForm(){
     + '<textarea class="inp" id="y-5" placeholder="The route.">' + esc(S.cfg.hz.route) + '</textarea>'
     + '<textarea class="inp" id="y-6" placeholder="Travel.">' + esc(S.cfg.hz.travel) + '</textarea>'
     + '<textarea class="inp" id="y-7" placeholder="Home.">' + esc(S.cfg.hz.home) + '</textarea></div>'
-    + '<div class="card"><h3>The decades</h3><div class="h">Held loosely and revised once a year. No countdown — these steer, they do not fall due.</div>'
+    + '<div class="card"><h3>Further out</h3><div class="h">Held loosely and revised once a year. No countdown — these steer, they do not fall due.</div>'
     + '<textarea class="inp" id="y-40" placeholder="By 40.">' + esc(S.cfg.hz.by40) + '</textarea>'
+    + '<textarea class="inp" id="y-45" placeholder="By 45.">' + esc(S.cfg.hz.by45) + '</textarea>'
     + '<textarea class="inp" id="y-50" placeholder="By 50.">' + esc(S.cfg.hz.by50) + '</textarea>'
+    + '<textarea class="inp" id="y-55" placeholder="By 55.">' + esc(S.cfg.hz.by55) + '</textarea>'
     + '<textarea class="inp" id="y-60" placeholder="By 60.">' + esc(S.cfg.hz.by60) + '</textarea></div>'
     + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveYear(\'' + yk + '\')">Close the year</button>';
 }
@@ -1439,7 +1433,9 @@ function saveYear(yk){
   y.audNote = $('#y-audnote').value.trim();
   S.cfg.hz.four = $('#y-4').value; S.cfg.hz.route = $('#y-5').value;
   S.cfg.hz.travel = $('#y-6').value; S.cfg.hz.home = $('#y-7').value;
-  S.cfg.hz.by40 = $('#y-40').value; S.cfg.hz.by50 = $('#y-50').value; S.cfg.hz.by60 = $('#y-60').value;
+  S.cfg.hz.by40 = $('#y-40').value; S.cfg.hz.by45 = $('#y-45').value;
+  S.cfg.hz.by50 = $('#y-50').value; S.cfg.hz.by55 = $('#y-55').value;
+  S.cfg.hz.by60 = $('#y-60').value;
   save(); toast('Year closed'); renderRev();
 }
 function st(v, l){ return '<div class="st"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
