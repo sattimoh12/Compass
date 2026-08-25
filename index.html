@@ -686,6 +686,8 @@ function year(k){
   const y = S.years[k];
   if(y.audN === undefined) y.audN = null;
   if(y.audNote === undefined) y.audNote = '';
+  ['mapDom','mapWalls','mapNamed','mapAxes'].forEach(f => { if(y[f] === undefined) y[f] = null; });
+  if(y.mapBridges === undefined) y.mapBridges = '';
   return y;
 }
 /* most recent recorded audience count, for the Horizon */
@@ -1411,7 +1413,8 @@ function yearForm(){
     + '<input class="inp" id="y-audnote" value="' + esc(y.audNote) + '" placeholder="what you counted — e.g. mailing list, or people who came to a screening">'
     + '</div>'
     + '<div class="card"><h3>Community &amp; network</h3><textarea class="inp" id="y-2" placeholder="Who knows the work now who did not in January.">' + esc(y.network) + '</textarea></div>'
-    + '<div class="card"><h3>Maps &mdash; number and density</h3><textarea class="inp" id="y-3" placeholder="What got linked to what.">' + esc(y.maps) + '</textarea></div>'
+    + mapCard(yk, y)
+    + '<div class="card"><h3>Maps &mdash; what got linked to what</h3><textarea class="inp" id="y-3" placeholder="In sentences. The numbers above are the instrument; this is the reading.">' + esc(y.maps) + '</textarea></div>'
     + '<div class="card"><h3>Long range</h3><div class="h">The only place these change. Four years, route, travel, home.</div>'
     + '<textarea class="inp" id="y-4" placeholder="Four-year target — revised or held.">' + esc(S.cfg.hz.four) + '</textarea>'
     + '<textarea class="inp" id="y-5" placeholder="The route.">' + esc(S.cfg.hz.route) + '</textarea>'
@@ -1425,9 +1428,54 @@ function yearForm(){
     + '<textarea class="inp" id="y-60" placeholder="By 60.">' + esc(S.cfg.hz.by60) + '</textarea></div>'
     + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveYear(\'' + yk + '\')">Close the year</button>';
 }
+/* ---------- THE MAP TEST ----------
+   Of the four parts of the model, only the map accumulates. Compass and fog are
+   settings — chosen per session, and the nearby evidence says the dials are
+   states rather than skills, so there is nothing there to improve over years.
+   Explore-then-exploit is a sequence inside a campaign, not a quantity. Linking
+   is the act that builds the map. So the map is the only part a twenty-year
+   measurement can be taken of, and these are the four numbers the model itself
+   names. Same week each year, cold, and never read last year's answers first. */
+var MAPQ = [
+  {k:'mapDom',   t:'Domains you can bridge from',
+   h:'Count the distinct domains in the loop library. This only moves when you have actually studied something new — reading widely cannot inflate it. Still 1 in twenty years means the map never expanded.'},
+  {k:'mapWalls', t:'Walls placed, of 20',
+   h:'Twenty sealed walls, sixty seconds each, cold. How many produced at least one domain.'},
+  {k:'mapNamed', t:'Domains named across those 20',
+   h:'The total, not the average. This is bridge density: the same twenty walls each year, so the number is comparable.'},
+  {k:'mapAxes',  t:'Axes from five pairs',
+   h:'Five fixed pairs from one category, five minutes. Every axis on which each pair differs. More and finer axes is what density looks like from the inside.'}
+];
+function mapCard(yk, y){
+  const past = Object.keys(S.years).filter(k => k < yk && S.years[k] && S.years[k].mapDom != null)
+    .sort().slice(-4);
+  const hist = k => past.length
+    ? '<div class="h" style="margin-top:3px;color:var(--faint)">before: '
+      + past.map(p => p + ': ' + (S.years[p][k] == null ? '—' : S.years[p][k])).join(' &nbsp;&middot;&nbsp; ') + '</div>'
+    : '';
+  return '<div class="card"><h3>The map</h3>'
+    + '<div class="h">Four numbers, once a year. Only the map accumulates — compass and fog are settings, not things that improve, so this is the only part of the model a long measurement can be taken of.</div>'
+    + MAPQ.map(q => '<div style="margin-top:14px">'
+        + '<div class="h" style="color:var(--ink)">' + q.t + '</div>'
+        + '<div class="h">' + q.h + '</div>'
+        + '<input class="inp" id="y-' + q.k + '" type="number" min="0" value="'
+        + (y[q.k] == null ? '' : y[q.k]) + '" placeholder="a number — 0 is a real answer">'
+        + hist(q.k) + '</div>').join('')
+    + '<div class="h" style="margin-top:16px;color:var(--ink)">Bridges that paid</div>'
+    + '<div class="h">A wall you were stuck on, the domain the answer came from. The least rigorous of these and the most convincing, because it measures the thing rather than a proxy for it.</div>'
+    + '<textarea class="inp" id="y-mapBridges" placeholder="the wall, the domain it was solved in, what crossed">' + esc(y.mapBridges) + '</textarea>'
+    + '<div class="h" style="margin-top:12px;color:var(--faint)">Practice inflates all of this. Keep a pool of a hundred walls and draw twenty at random, and do not read last year&rsquo;s sheet until this year&rsquo;s is finished.</div>'
+    + '</div>';
+}
+
 function saveYear(yk){
   const y = year(yk);
   y.mastery = $('#y-1').value; y.network = $('#y-2').value; y.maps = $('#y-3').value; y.done = true;
+  MAPQ.forEach(q => {
+    const v = ($('#y-' + q.k).value||'').trim();
+    y[q.k] = v === '' ? null : Math.max(0, parseInt(v,10) || 0);
+  });
+  y.mapBridges = $('#y-mapBridges').value;
   const av = ($('#y-aud').value||'').trim();
   y.audN = av === '' ? null : Math.max(0, parseInt(av,10) || 0);
   y.audNote = $('#y-audnote').value.trim();
