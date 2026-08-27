@@ -679,7 +679,13 @@ function week(k){
   if(S.weeks[k].delivery === undefined) S.weeks[k].delivery = false;
   return S.weeks[k];
 }
-function month(k){ k=k||monthKey(new Date()); if(!S.months[k]) S.months[k]={note:'',project:'',done:false}; return S.months[k]; }
+function month(k){
+  k = k || monthKey(new Date());
+  if(!S.months[k]) S.months[k] = {note:'', project:'', done:false};
+  const m = S.months[k];
+  ['predBurn','actBurn','cash'].forEach(f => { if(m[f] === undefined) m[f] = null; });
+  return m;
+}
 function year(k){
   k = k || String(new Date().getFullYear());
   if(!S.years[k]) S.years[k] = {mastery:'', network:'', maps:'', future:'', audN:null, audNote:'', done:false};
@@ -1342,6 +1348,7 @@ function monthForm(){
     + '<input class="inp" id="m-proj" value="' + esc(S.cfg.project) + '" placeholder="the one thing"></div>'
     + '<div class="card"><h3>The month ahead</h3><div class="h">What is coming, and anything to add. This becomes the Horizon.</div>'
     + '<textarea class="inp" id="m-hz" placeholder="Shape of the month.">' + esc(S.cfg.hz.month) + '</textarea></div>'
+    + moneyCard(pk, monthKey(now))
     + '<div class="card"><h3>Review</h3><textarea class="inp" id="m-note" placeholder="What actually happened. Plainly.">' + esc(m.note) + '</textarea></div>'
     + '<div class="card"><h3>Disciplines</h3><div class="h">Three slots. The first is the one the others feed.</div>'
     + '<input class="inp" id="m-a" value="' + esc(S.cfg.discA) + '" placeholder="the primary one">'
@@ -1372,6 +1379,46 @@ function releaseCard(prev){
     + list
     + '<div class="row"><button class="btn gold" onclick="addRelease()">Add something</button></div></div>';
 }
+/* ---------- MONEY ----------
+   Three numbers, and the interesting one is a gap. A balance makes no claim, so
+   there is nothing in it to catch being wrong — which is exactly why it gets
+   avoided. A prediction written a month before the number arrives does make a
+   claim, and checking it is a different act from looking at what you spent.
+   Runway is the only output, because it is the only one that changes a decision.
+   No categories, no transactions: what it went on is the shaming part and it is
+   not needed to compute anything here. */
+function num(v){ v = (v||'').toString().trim(); return v === '' ? null : Math.max(0, Math.round(parseFloat(v)) || 0); }
+function moneyCard(pk, mk){
+  const prev = month(pk), cur = month(mk);
+  const pred = prev.predBurn;      /* written last month, before the number was known */
+  const act  = prev.actBurn;
+  let gap = '';
+  if(pred != null && act != null){
+    const d = act - pred, pc = pred ? Math.round(Math.abs(d) / pred * 100) : 0;
+    gap = '<div class="' + (Math.abs(d) > (pred||0) * 0.2 ? 'flag' : 'card') + '" style="margin-top:10px">'
+      + '<b>' + (d === 0 ? 'Exactly right.' : (d > 0 ? 'Over by ' : 'Under by ') + Math.abs(d) + (pc ? ' — ' + pc + '%' : '')) + '</b>'
+      + '<div class="h" style="margin:4px 0 0">You predicted ' + pred + ', it was ' + act
+      + '. The gap is the finding — not the spending.</div></div>';
+  }
+  let run = '';
+  if(cur.cash != null && act){
+    const months = (cur.cash / act);
+    run = '<div class="stats" style="margin-top:10px">'
+      + st(months.toFixed(1), 'months of runway') + st(act, 'a month, last month') + '</div>';
+  }
+  return '<div class="card"><h3>Money</h3>'
+    + '<div class="h">One look at the bank, once a month. Predict first, then check &mdash; the point is whether you were right, not what it went on.</div>'
+    + '<div class="h" style="margin-top:12px;color:var(--ink)">What ' + MON[+pk.slice(5,7)-1] + ' actually cost</div>'
+    + '<input class="inp" id="m-act" type="number" min="0" value="' + (act == null ? '' : act) + '" placeholder="total out, one number">'
+    + '<div class="h" style="margin-top:12px;color:var(--ink)">Cash on hand today</div>'
+    + '<input class="inp" id="m-cash" type="number" min="0" value="' + (cur.cash == null ? '' : cur.cash) + '" placeholder="everything you could spend">'
+    + gap + run
+    + '<div class="h" style="margin-top:14px;color:var(--ink)">Predict ' + MON[+mk.slice(5,7)-1] + ', before you look again</div>'
+    + '<div class="h">Write it now, while you know nothing. This is the claim next month gets to check.</div>'
+    + '<input class="inp" id="m-pred" type="number" min="0" value="' + (cur.predBurn == null ? '' : cur.predBurn) + '" placeholder="what you think it will cost">'
+    + '</div>';
+}
+
 function saveMonth(){
   const m = month();
   S.cfg.project = $('#m-proj').value.trim();
@@ -1380,6 +1427,11 @@ function saveMonth(){
   S.cfg.discB = $('#m-b').value.trim();
   S.cfg.discC = $('#m-c').value.trim();
   m.note = $('#m-note').value; m.project = S.cfg.project; m.done = true;
+  const now = new Date(), pk = monthKey(new Date(now.getFullYear(), now.getMonth()-1, 1));
+  const prev = month(pk);
+  prev.actBurn = num($('#m-act').value);
+  m.cash = num($('#m-cash').value);
+  m.predBurn = num($('#m-pred').value);
   save(); toast('Month closed'); renderRev();
 }
 
@@ -1429,22 +1481,24 @@ function yearForm(){
     + '<button class="btn gold" style="width:100%;padding:14px" onclick="saveYear(\'' + yk + '\')">Close the year</button>';
 }
 /* ---------- THE MAP TEST ----------
-   Of the four parts of the model, only the map accumulates. Compass and fog are
-   settings — chosen per session, and the nearby evidence says the dials are
-   states rather than skills, so there is nothing there to improve over years.
-   Explore-then-exploit is a sequence inside a campaign, not a quantity. Linking
-   is the act that builds the map. So the map is the only part a twenty-year
-   measurement can be taken of, and these are the four numbers the model itself
-   names. Same week each year, cold, and never read last year's answers first. */
+   Of the four parts of the model, only the map accumulates. Compass and fog do
+   improve with practice — naming a binding wall in a sentence that excludes,
+   directs and terminates is a skill, and so is knowing which fog lever to reach
+   for — but they are exercised per session rather than stored, so they show in
+   how a session goes rather than in a total that grows. Explore-then-exploit is
+   a sequence inside a campaign, not a quantity. Linking is the act that builds
+   the map. So the map is the part a long measurement can be taken of, and these
+   are the numbers the model itself names. Same week each year, cold, and never
+   read last year's answers first. */
 var MAPQ = [
   {k:'mapLinks', t:'Links written', in:true,
    h:'From the loop library. This is what you deposited, and it is the only one you control directly — but it is also the one that inflates: an arbitrary link is a real edge in a place you will never go, and volume produces those. On its own it proves nothing.'},
   {k:'mapDom',   t:'Domains you can bridge from',
    h:'Count the distinct domains in the loop library. This only moves when you have actually studied something new — reading widely cannot inflate it. Still 1 in twenty years means the map never expanded.'},
-  {k:'mapWalls', t:'Walls placed, of 20',
-   h:'Twenty sealed walls, sixty seconds each, cold. How many produced at least one domain.'},
+  {k:'mapWalls', t:'Conflicts placed, of 20',
+   h:'Twenty drawn at random from the sealed bank, sixty seconds each, cold. How many produced at least one domain. Not your own walls: a solved one you would be recalling the answer to, and a live one you have already been searching, so the fluency comes from the search rather than the map. And either way it changes state between years, which a repeated measure cannot use.'},
   {k:'mapNamed', t:'Domains named across those 20',
-   h:'The total, not the average. This is bridge density: the same twenty walls each year, so the number is comparable.'},
+   h:'The total, not the average. This is bridge density. A fresh draw each year from the same bank, never reusing one inside three years — the pool is what stays constant, not the items.'},
   {k:'mapAxes',  t:'Axes from five pairs',
    h:'Five fixed pairs from one category, five minutes. Every axis on which each pair differs. More and finer axes is what density looks like from the inside.'}
 ];
@@ -1456,7 +1510,7 @@ function mapCard(yk, y){
       + past.map(p => p + ': ' + (S.years[p][k] == null ? '—' : S.years[p][k])).join(' &nbsp;&middot;&nbsp; ') + '</div>'
     : '';
   return '<div class="card"><h3>The map</h3>'
-    + '<div class="h">Once a year. Only the map accumulates — compass and fog are settings, not things that improve, so this is the only part of the model a long measurement can be taken of.</div>'
+    + '<div class="h">Once a year. Of the four parts, only the map <b style="color:var(--dim)">accumulates</b>. Compass and fog get better with practice, but they are exercised per session rather than stored, so they show in how a session goes rather than in a total that grows. The map is the part a long measurement can be taken of.</div>'
     + '<div class="h" style="margin-top:8px">The first number is what you <b style="color:var(--dim)">put in</b>. The rest are what you can <b style="color:var(--dim)">still reach</b>, cold. Neither means much alone — many links and few walls placed means the edges went somewhere you never travel.</div>'
     + MAPQ.map(q => '<div style="margin-top:14px">'
         + '<div class="h" style="color:var(--ink)">' + q.t
@@ -1468,7 +1522,8 @@ function mapCard(yk, y){
     + '<div class="h" style="margin-top:16px;color:var(--ink)">Bridges that paid</div>'
     + '<div class="h">A wall you were stuck on, the domain the answer came from. The least rigorous of these and the most convincing, because it measures the thing rather than a proxy for it.</div>'
     + '<textarea class="inp" id="y-mapBridges" placeholder="the wall, the domain it was solved in, what crossed">' + esc(y.mapBridges) + '</textarea>'
-    + '<div class="h" style="margin-top:12px;color:var(--faint)">Practice inflates all of this. Keep a pool of a hundred walls and draw twenty at random, and do not read last year&rsquo;s sheet until this year&rsquo;s is finished.</div>'
+    + '<div class="h" style="margin-top:12px;color:var(--faint)">The bank is conflicts stated noun-free that you are <b>not</b> working on &mdash; build it as you study, and never draw from your live walls. Do not read last year&rsquo;s sheet until this year&rsquo;s is finished.</div>'
+    + '<div class="h" style="margin-top:8px;color:var(--faint)">Put <b>five control items</b> in the twenty &mdash; ones you have placed easily before, rehearsed on purpose. Their job is to show the instrument is working today. If the easy ones come back empty too, it was a bad day rather than a small map: stop, throw the sitting away, and run it again another day.</div>'
     + '</div>';
 }
 
