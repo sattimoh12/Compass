@@ -684,6 +684,8 @@ function month(k){
   if(!S.months[k]) S.months[k] = {note:'', project:'', done:false};
   const m = S.months[k];
   ['predBurn','actBurn','cash'].forEach(f => { if(m[f] === undefined) m[f] = null; });
+  if(m.dialSet === undefined) m.dialSet = '';
+  if(m.dialFlinch === undefined) m.dialFlinch = '';
   return m;
 }
 function year(k){
@@ -1349,6 +1351,7 @@ function monthForm(){
     + '<div class="card"><h3>The month ahead</h3><div class="h">What is coming, and anything to add. This becomes the Horizon.</div>'
     + '<textarea class="inp" id="m-hz" placeholder="Shape of the month.">' + esc(S.cfg.hz.month) + '</textarea></div>'
     + moneyCard(pk, monthKey(now))
+    + dialCard(monthKey(now), m)
     + '<div class="card"><h3>Review</h3><textarea class="inp" id="m-note" placeholder="What actually happened. Plainly.">' + esc(m.note) + '</textarea></div>'
     + '<div class="card"><h3>Disciplines</h3><div class="h">Three slots. The first is the one the others feed.</div>'
     + '<input class="inp" id="m-a" value="' + esc(S.cfg.discA) + '" placeholder="the primary one">'
@@ -1419,6 +1422,59 @@ function moneyCard(pk, mk){
     + '</div>';
 }
 
+/* ---------- LOWERING THE DIAL ----------
+   Fog, aimed at the compass of the life rather than at a scene. Value binds
+   loudly to the current direction, which is what keeps you on it and also what
+   filters the alternatives out before they are visible. Turning the gain down
+   surfaces the set; it does not rank it. Nothing here is decided — ranking
+   happens unfogged, at the yearly review, which is the whole point of doing it
+   at a different sitting from the one that acts on it.
+
+   The lever rotates monthly because a fixed prompt stops registering in about
+   two weeks, and a fog lever that has stopped registering is not a lever. */
+var DIALS = [
+  {t:'Ten, none of which count',
+   h:'Name ten directions this life could take. Declared in advance as not counting, so none of them has to be defensible. Do not stop at the plausible ones — the first four will be the four you already have.'},
+  {t:'Somebody else, same life',
+   h:'Someone who never wanted to direct, holding your exact circumstances — the city, the languages, the people, the skills. What do they spend the next year doing?'},
+  {t:'Two that cannot both be true',
+   h:'Write down two things you want that are genuinely incompatible. Do not resolve them. Both, stated plainly, held at once.'},
+  {t:'Without consulting the plan',
+   h:'Do not open Horizon first. What is the work actually for? Answer before you check what you wrote last time.'},
+  {t:'If it were already settled',
+   h:'The question of whether the film career works out has been answered — decided, closed, no longer live. With that removed, what do you want the next ten years to contain?'},
+  {t:'As a constraint, not a goal',
+   h:'State what you want as a requirement the life must meet rather than as something to achieve. A goal recedes; a constraint can be checked against next month.'}
+];
+function dialFor(mk){ return DIALS[(+mk.slice(0,4) * 12 + (+mk.slice(5,7) - 1)) % DIALS.length]; }
+function dialCard(mk, m){
+  const d = dialFor(mk);
+  /* the same thing surfacing month after month is the finding — one month of it
+     is noise, and you cannot see recurrence without the previous months in view */
+  const past = Object.keys(S.months).filter(k => k < mk && S.months[k] && (S.months[k].dialSet || S.months[k].dialFlinch))
+    .sort().reverse().slice(0,5);
+  const hist = past.length
+    ? '<div class="h" style="margin-top:16px;color:var(--ink)">What came up before</div>'
+      + past.map(k => '<div class="g" style="cursor:default;align-items:flex-start"><div class="nm">'
+          + '<b style="font-weight:400;color:var(--dim);font-size:11px">' + MON[+k.slice(5,7)-1] + ' ' + k.slice(0,4) + '</b>'
+          + '<small style="white-space:pre-wrap;color:var(--ink)">' + esc(S.months[k].dialSet || '—') + '</small>'
+          + (S.months[k].dialFlinch ? '<small style="white-space:pre-wrap;color:var(--gold)">' + esc(S.months[k].dialFlinch) + '</small>' : '')
+          + '</div></div>').join('')
+      + '<div class="h" style="color:var(--faint)">The same thing appearing three months running is the signal. Once is nothing.</div>'
+    : '';
+  return '<div class="card"><h3>Lowering the dial</h3>'
+    + '<div class="h">Fog, pointed at your own compass instead of at a scene. Value binds loudly to the direction you are already on — which is what keeps you on it, and what filters the alternatives out before you ever see them. This turns the gain down for one sitting.</div>'
+    + '<div class="h" style="margin-top:10px;color:var(--ink)">' + d.t + '</div>'
+    + '<div class="h">' + d.h + '</div>'
+    + '<textarea class="inp" id="m-dial" style="min-height:130px" placeholder="the set — not the answer">' + esc(m.dialSet) + '</textarea>'
+    + '<div class="h" style="margin-top:14px;color:var(--ink)">Anything that produced a reaction</div>'
+    + '<div class="h">Banked, not acted on. A flinch is a candidate flagged, not a decision made.</div>'
+    + '<textarea class="inp" id="m-dialf" placeholder="what pulled, or what you recoiled from">' + esc(m.dialFlinch) + '</textarea>'
+    + hist
+    + '<div class="h" style="margin-top:14px;color:var(--faint)">Nothing here gets decided. Fog reveals the set; clarity reveals the ranking, and the ranking happens at the yearly review with the dial back up.</div>'
+    + '</div>';
+}
+
 function saveMonth(){
   const m = month();
   S.cfg.project = $('#m-proj').value.trim();
@@ -1432,6 +1488,7 @@ function saveMonth(){
   prev.actBurn = num($('#m-act').value);
   m.cash = num($('#m-cash').value);
   m.predBurn = num($('#m-pred').value);
+  m.dialSet = $('#m-dial').value; m.dialFlinch = $('#m-dialf').value;
   save(); toast('Month closed'); renderRev();
 }
 
