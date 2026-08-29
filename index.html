@@ -1434,36 +1434,39 @@ function moneyCard(pk, mk){
    two weeks, and a fog lever that has stopped registering is not a lever. */
 var DIALS = [
   {t:'Ten, none of which count',
-   h:'Name ten directions this life could take. Declared in advance as not counting, so none of them has to be defensible. Do not stop at the plausible ones — the first four will be the four you already have.'},
-  {t:'Somebody else, same life',
-   h:'Someone who never wanted to direct, holding your exact circumstances — the city, the languages, the people, the skills. What do they spend the next year doing?'},
+   h:'Ten things that could be different — work, people, where you live, how a week is spent, anything. Declared in advance as not counting, so none has to be defensible. Do not stop at the plausible ones; the first four will be the four you already have.'},
+  {t:'A rule you made',
+   h:'Name one rule you set for yourself and have not revisited. What was it opposing when you made it? Does that thing still need opposing, or is the rule now the drift?'},
   {t:'Two that cannot both be true',
-   h:'Write down two things you want that are genuinely incompatible. Do not resolve them. Both, stated plainly, held at once.'},
-  {t:'Without consulting the plan',
-   h:'Do not open Horizon first. What is the work actually for? Answer before you check what you wrote last time.'},
-  {t:'If it were already settled',
-   h:'The question of whether the film career works out has been answered — decided, closed, no longer live. With that removed, what do you want the next ten years to contain?'},
-  {t:'As a constraint, not a goal',
-   h:'State what you want as a requirement the life must meet rather than as something to achieve. A goal recedes; a constraint can be checked against next month.'}
+   h:'Two things you want that are genuinely incompatible. Do not resolve them, do not pick. Both, stated plainly, held at once.'},
+  {t:'A decision from six months ago',
+   h:'One decision you made and have not looked at since — about a person, a commitment, a place, a way of working. State what you knew then. State what you know now. Distance is the lever; do not use it to justify.'},
+  {t:'Somebody else, your circumstances',
+   h:'Someone with your exact circumstances — the city, the languages, the money, the skills, the people — and none of your commitments. What do they spend the next year on?'},
+  {t:'If the open question were closed',
+   h:'Whichever question you are currently living against — take it as answered, decided, no longer live. With it removed, what do you want the next ten years to contain?'}
 ];
 function dialFor(mk){ return DIALS[(+mk.slice(0,4) * 12 + (+mk.slice(5,7) - 1)) % DIALS.length]; }
 function dialCard(mk, m){
   const d = dialFor(mk);
   /* the same thing surfacing month after month is the finding — one month of it
      is noise, and you cannot see recurrence without the previous months in view */
+  /* six back, not five: with six levers the same one comes round every six
+     months, so this window always reaches the last time you were asked this. */
   const past = Object.keys(S.months).filter(k => k < mk && S.months[k] && (S.months[k].dialSet || S.months[k].dialFlinch))
-    .sort().reverse().slice(0,5);
+    .sort().reverse().slice(0,6);
   const hist = past.length
     ? '<div class="h" style="margin-top:16px;color:var(--ink)">What came up before</div>'
       + past.map(k => '<div class="g" style="cursor:default;align-items:flex-start"><div class="nm">'
-          + '<b style="font-weight:400;color:var(--dim);font-size:11px">' + MON[+k.slice(5,7)-1] + ' ' + k.slice(0,4) + '</b>'
+          + '<b style="font-weight:400;color:var(--dim);font-size:11px">' + MON[+k.slice(5,7)-1] + ' ' + k.slice(0,4)
+          + (dialFor(k).t === d.t ? ' <span style="color:var(--gold)">— the same question</span>' : '') + '</b>'
           + '<small style="white-space:pre-wrap;color:var(--ink)">' + esc(S.months[k].dialSet || '—') + '</small>'
           + (S.months[k].dialFlinch ? '<small style="white-space:pre-wrap;color:var(--gold)">' + esc(S.months[k].dialFlinch) + '</small>' : '')
           + '</div></div>').join('')
       + '<div class="h" style="color:var(--faint)">The same thing appearing three months running is the signal. Once is nothing.</div>'
     : '';
   return '<div class="card"><h3>Lowering the dial</h3>'
-    + '<div class="h">Fog, pointed at your own compass instead of at a scene. Value binds loudly to the direction you are already on — which is what keeps you on it, and what filters the alternatives out before you ever see them. This turns the gain down for one sitting.</div>'
+    + '<div class="h">Fog, pointed at your own compass rather than at the work. Value binds loudly to whatever you are already committed to — which is what keeps you on it, and what filters the alternatives out before you ever see them. This turns the gain down for one sitting. Not only about the work: a decision, a rule you set, who you see, where you live.</div>'
     + '<div class="h" style="margin-top:10px;color:var(--ink)">' + d.t + '</div>'
     + '<div class="h">' + d.h + '</div>'
     + '<textarea class="inp" id="m-dial" style="min-height:130px" placeholder="the set — not the answer">' + esc(m.dialSet) + '</textarea>'
